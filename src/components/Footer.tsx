@@ -12,43 +12,49 @@ export function Footer({ theme, onChangeTheme }: FooterProps) {
         <div>
           <a
             href="#"
-            className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC] whitespace-nowrap"
+            className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             Proofline
           </a>
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
             Continuous testing and security verification for AI-generated apps. Screenshots are
             analyzed in memory and never stored.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-6 text-xs text-slate-600 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-slate-600 dark:text-slate-300">
           <a
             href="#how-it-works"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             How it works
           </a>
           <a
             href="#live-audit"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             Live Audit
           </a>
           <a
             href="#proof"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             Proof
           </a>
           <a
+            href="#faq"
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+          >
+            FAQ
+          </a>
+          <a
             href="#waitlist"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             Early Access
           </a>
           <ThemeToggle theme={theme} onChangeTheme={onChangeTheme} />
-          <span className="text-slate-400 dark:text-slate-500">© 2026 Proofline</span>
+          <span className="text-slate-600 dark:text-slate-400">© 2026 Proofline</span>
         </div>
       </div>
     </footer>

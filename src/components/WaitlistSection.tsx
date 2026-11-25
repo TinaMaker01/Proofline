@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type RefObject } from 'react';
+import { useRef, useState, type FormEvent, type RefObject } from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import type { BuilderTool, WaitlistResponse } from '../types/qa';
@@ -20,6 +20,20 @@ const PAIN_POINTS = [
   'Mobile layout glitches before launch',
 ];
 
+function isValidOptionalUrl(rawUrl: string): boolean {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return true;
+  if (trimmed.length > 500) return false;
+  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    return parsed.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
 export function WaitlistSection({
   emailInputRef,
   latestSignup,
@@ -32,18 +46,30 @@ export function WaitlistSection({
   const [painPoint, setPainPoint] = useState(PAIN_POINTS[0]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<'email' | 'appUrl' | null>(null);
   const [localResult, setLocalResult] = useState<WaitlistResponse | null>(null);
   const [dismissedParent, setDismissedParent] = useState(false);
+  const appUrlInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeConfirmation = localResult || (!dismissedParent ? latestSignup : null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setInvalidField(null);
 
     const trimmedEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)) {
       setError('Please enter a valid email address.');
+      setInvalidField('email');
+      emailInputRef.current?.focus();
+      return;
+    }
+
+    if (!isValidOptionalUrl(appUrl)) {
+      setError('Please enter a valid http or https URL (for example, myapp.lovable.app).');
+      setInvalidField('appUrl');
+      appUrlInputRef.current?.focus();
       return;
     }
 
@@ -79,16 +105,13 @@ export function WaitlistSection({
   return (
     <section
       id="waitlist"
-      className="py-20 lg:py-28 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
+      className="scroll-mt-20 py-20 lg:py-28 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Early access cohort
-            </p>
             <h2
-              className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
+              className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
               style={{ textWrap: 'balance' }}
             >
               Verify everything before your next launch.
@@ -107,7 +130,7 @@ export function WaitlistSection({
                 onboarding with our founding team.
               </p>
               {waitlistCount !== null && waitlistCount > 0 && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                <p className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
                   {waitlistCount} {waitlistCount === 1 ? 'builder has' : 'builders have'} requested
                   early access from this workspace.
                 </p>
@@ -134,7 +157,7 @@ export function WaitlistSection({
                       transition={{ duration: 0.3, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
                       className="shrink-0 mt-0.5"
                     >
-                      <CheckCircle2 className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
+                      <CheckCircle2 className="w-6 h-6 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                     </motion.div>
                     <div>
                       <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-[#F8FAFC]">
@@ -167,8 +190,10 @@ export function WaitlistSection({
                         setDismissedParent(true);
                         setEmail('');
                         setAppUrl('');
+                        setError(null);
+                        setInvalidField(null);
                       }}
-                      className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer"
+                      className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                     >
                       Register another team email
                     </button>
@@ -190,10 +215,22 @@ export function WaitlistSection({
                         type="email"
                         required
                         autoComplete="email"
+                        aria-invalid={invalidField === 'email'}
+                        aria-describedby={error && invalidField === 'email' ? 'waitlist-form-error' : undefined}
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (error) {
+                            setError(null);
+                            setInvalidField(null);
+                          }
+                        }}
                         placeholder="founder@company.com"
-                        className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
+                        className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                          invalidField === 'email'
+                            ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
+                            : 'border-slate-300 dark:border-slate-700 focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25'
+                        }`}
                       />
                     </div>
 
@@ -227,19 +264,33 @@ export function WaitlistSection({
                       App or preview URL (optional)
                     </label>
                     <input
+                      ref={appUrlInputRef}
                       id="waitlist-url"
-                      type="url"
+                      type="text"
+                      inputMode="url"
+                      aria-invalid={invalidField === 'appUrl'}
+                      aria-describedby={error && invalidField === 'appUrl' ? 'waitlist-form-error' : undefined}
                       value={appUrl}
-                      onChange={(e) => setAppUrl(e.target.value)}
+                      onChange={(e) => {
+                        setAppUrl(e.target.value);
+                        if (error) {
+                          setError(null);
+                          setInvalidField(null);
+                        }
+                      }}
                       placeholder="https://myapp.lovable.app"
-                      className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
+                      className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                        invalidField === 'appUrl'
+                          ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
+                          : 'border-slate-300 dark:border-slate-700 focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25'
+                      }`}
                     />
                   </div>
 
-                  <div>
-                    <span className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <fieldset>
+                    <legend className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
                       What worries you most before shipping?
-                    </span>
+                    </legend>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {PAIN_POINTS.map((option) => {
                         const selected = painPoint === option;
@@ -249,7 +300,7 @@ export function WaitlistSection({
                             type="button"
                             onClick={() => setPainPoint(option)}
                             aria-pressed={selected}
-                            className={`px-3.5 py-2.5 text-left text-xs font-medium rounded-lg border transition-colors cursor-pointer ${
+                            className={`px-3.5 py-2.5 text-left text-xs font-medium rounded-lg border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                               selected
                                 ? 'bg-white dark:bg-[#161F33] border-[#1E40AF] dark:border-[#3B82F6] text-[#1E40AF] dark:text-[#93C5FD]'
                                 : 'bg-white/70 dark:bg-[#090D16] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
@@ -260,20 +311,21 @@ export function WaitlistSection({
                         );
                       })}
                     </div>
-                  </div>
+                  </fieldset>
 
                   {error && (
                     <p
+                      id="waitlist-form-error"
                       role="alert"
                       className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400"
                     >
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                       <span>{error}</span>
                     </p>
                   )}
 
                   <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       No spam. Only your early access invite and cohort updates.
                     </p>
                     <button
@@ -281,7 +333,7 @@ export function WaitlistSection({
                       disabled={submitting}
                       className="px-6 py-3 text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-60 active:scale-[0.99] rounded-lg transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                     >
-                      {submitting ? 'Submitting...' : 'Reserve Early Access'}
+                      {submitting ? 'Submitting...' : 'Get Early Access'}
                     </button>
                   </div>
                 </form>

@@ -1,30 +1,32 @@
-import { useState } from 'react';
-import { Layers, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
-const FLOW_IMAGE_PATH = '/src/assets/images/bento_flow_testing_1795597424389.jpg';
-const SHIELD_IMAGE_PATH = '/src/assets/images/bento_security_shield_1795597424628.jpg';
+const FLOW_TRACE_STEPS = [
+  { step: 'Sign up (/signup)', desktop: '200 OK · 1.1s', mobile: '200 OK', status: 'pass' },
+  { step: 'Verify session', desktop: 'JWT scoped', mobile: 'JWT scoped', status: 'pass' },
+  { step: 'Stripe checkout', desktop: '200 OK · 1.4s', mobile: 'CTA clipped at 390px', status: 'warn' },
+] as const;
+
+const REGRESSION_DIFFS = [
+  { check: 'Auth redirect (/dashboard)', baseline: '200 OK', preview: '200 OK', status: 'pass' },
+  { check: 'POST /api/checkout', baseline: '200 OK', preview: '500 · missing STRIPE_WEBHOOK_SECRET', status: 'fail' },
+  { check: 'Public bundle scan', baseline: '0 secrets', preview: '0 secrets', status: 'pass' },
+] as const;
 
 export function CapabilitiesBento() {
-  const [flowImgErr, setFlowImgErr] = useState(false);
-  const [shieldImgErr, setShieldImgErr] = useState(false);
-
   return (
     <section
       id="how-it-works"
-      className="py-20 lg:py-28 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
+      className="scroll-mt-20 py-20 lg:py-28 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="max-w-2xl">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            How Proofline protects your launch
-          </p>
           <h2
-            className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
+            className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
             style={{ textWrap: 'balance' }}
           >
             AI tools move fast. Silent regressions move faster.
           </h2>
-          <p className="mt-4 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p className="mt-4 max-w-[54ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
             Fixing a button on your pricing page shouldn’t break Stripe webhooks or expose your user
             table. Proofline watches every change so non-technical builders ship with engineering
             rigor.
@@ -33,11 +35,10 @@ export function CapabilitiesBento() {
 
         {/* Asymmetric 3-column Bento Grid */}
         <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 01 — Wide Span */}
+          {/* Wide Span — Continuous Flow Verification */}
           <article className="lg:col-span-2 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between">
             <div className="p-7 sm:p-8">
-              <p className="text-xs font-mono tabular-nums text-slate-500 dark:text-[#60A5FA]">01</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
+              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
                 Continuous Flow Verification
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
@@ -46,31 +47,51 @@ export function CapabilitiesBento() {
                 a button stops responding or a redirect loops, you know in under 90 seconds.
               </p>
             </div>
-            <div className="px-7 sm:px-8 pb-7 sm:pb-8">
-              <div className="aspect-[16/9] max-h-[260px] w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#090D16]">
-                {!flowImgErr ? (
-                  <img
-                    src={FLOW_IMAGE_PATH}
-                    alt="Architectural blueprint sheets and tablet aligned on a stone surface representing structured automated test flows"
-                    referrerPolicy="no-referrer"
-                    onError={() => setFlowImgErr(true)}
-                    className="w-full h-full object-cover dark:brightness-[0.9] dark:contrast-[1.04]"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#090D16]">
-                    <Layers className="w-5 h-5 text-[#1E40AF] dark:text-[#60A5FA]" />
-                    <span className="text-sm font-medium">Automated User Flow Verification</span>
+            <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] divide-y divide-slate-200 dark:divide-slate-800">
+              {FLOW_TRACE_STEPS.map((row) => (
+                <div
+                  key={row.step}
+                  className="px-7 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {row.status === 'pass' ? (
+                      <CheckCircle2
+                        className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <AlertTriangle
+                        className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="font-medium text-slate-900 dark:text-[#F8FAFC]">
+                      {row.step}
+                    </span>
                   </div>
-                )}
-              </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono tabular-nums">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      1440px: {row.desktop}
+                    </span>
+                    <span
+                      className={
+                        row.status === 'warn'
+                          ? 'text-amber-700 dark:text-amber-400 font-medium'
+                          : 'text-slate-600 dark:text-slate-400'
+                      }
+                    >
+                      390px: {row.mobile}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </article>
 
-          {/* 02 — Narrow Span */}
+          {/* Narrow Span — Exposure & Secret Guard */}
           <article className="lg:col-span-1 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-7 sm:p-8 flex flex-col justify-between">
             <div>
-              <p className="text-xs font-mono tabular-nums text-slate-500 dark:text-[#60A5FA]">02</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
+              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
                 Exposure & Secret Guard
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -81,32 +102,31 @@ export function CapabilitiesBento() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-              <div className="flex items-baseline justify-between gap-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                 <span>Client bundle key scan</span>
-                <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
                   Every deploy
                 </span>
               </div>
-              <div className="flex items-baseline justify-between gap-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                 <span>Row-level access check</span>
-                <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
                   Supabase & Firebase
                 </span>
               </div>
-              <div className="flex items-baseline justify-between gap-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                 <span>Unauthenticated route probe</span>
-                <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
                   API & webhooks
                 </span>
               </div>
             </div>
           </article>
 
-          {/* 03 — Narrow Span */}
+          {/* Narrow Span — One-Prompt Auto-Fixes */}
           <article className="lg:col-span-1 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-7 sm:p-8 flex flex-col justify-between">
             <div>
-              <p className="text-xs font-mono tabular-nums text-slate-500 dark:text-[#60A5FA]">03</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
+              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
                 One-Prompt Auto-Fixes
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -117,7 +137,7 @@ export function CapabilitiesBento() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                 Sample generated repair prompt
               </p>
               <p className="font-mono text-xs leading-relaxed text-slate-700 dark:text-slate-200 bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 rounded-lg p-3.5">
@@ -127,11 +147,10 @@ export function CapabilitiesBento() {
             </div>
           </article>
 
-          {/* 04 — Wide Span */}
+          {/* Wide Span — Pre-Launch Regression Shield */}
           <article className="lg:col-span-2 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between">
             <div className="p-7 sm:p-8">
-              <p className="text-xs font-mono tabular-nums text-slate-500 dark:text-[#60A5FA]">04</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
+              <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
                 Pre-Launch Regression Shield
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
@@ -140,23 +159,44 @@ export function CapabilitiesBento() {
                 you share your link with investors, Product Hunt, or paying users.
               </p>
             </div>
-            <div className="px-7 sm:px-8 pb-7 sm:pb-8">
-              <div className="aspect-[16/9] max-h-[260px] w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#090D16]">
-                {!shieldImgErr ? (
-                  <img
-                    src={SHIELD_IMAGE_PATH}
-                    alt="Precision brushed aluminum and frosted glass geometric enclosure representing layered application security"
-                    referrerPolicy="no-referrer"
-                    onError={() => setShieldImgErr(true)}
-                    className="w-full h-full object-cover dark:brightness-[0.9] dark:contrast-[1.04]"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#090D16]">
-                    <ShieldCheck className="w-5 h-5 text-[#1E40AF] dark:text-[#60A5FA]" />
-                    <span className="text-sm font-medium">Pre-Launch Regression Shield</span>
+            <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] divide-y divide-slate-200 dark:divide-slate-800">
+              {REGRESSION_DIFFS.map((diff) => (
+                <div
+                  key={diff.check}
+                  className="px-7 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {diff.status === 'pass' ? (
+                      <CheckCircle2
+                        className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <XCircle
+                        className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="font-medium text-slate-900 dark:text-[#F8FAFC]">
+                      {diff.check}
+                    </span>
                   </div>
-                )}
-              </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono tabular-nums">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      Last pass: {diff.baseline}
+                    </span>
+                    <span
+                      className={
+                        diff.status === 'fail'
+                          ? 'text-rose-700 dark:text-rose-400 font-medium'
+                          : 'text-slate-600 dark:text-slate-400'
+                      }
+                    >
+                      Preview: {diff.preview}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </article>
         </div>

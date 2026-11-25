@@ -1,4 +1,13 @@
-import { useState, useRef, useEffect, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import {
   Upload,
   ScanSearch,
@@ -19,6 +28,7 @@ import type {
   ChatMessage,
   FindingSeverity,
   ScreenshotAnalysisResult,
+  ScreenshotFinding,
 } from '../types/qa';
 
 const BUILDERS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
@@ -28,6 +38,13 @@ const STARTER_PROMPTS = [
   'My Bolt app works in preview but login fails after deploying to a custom domain.',
   'What 5 checks should I run before taking real Stripe payments on a Cursor MVP?',
 ];
+
+const WELCOME_MESSAGE: ChatMessage = {
+  id: 'welcome',
+  role: 'model',
+  text: 'Ask me about any fragile flow, auth bug, or potential data exposure in your Lovable, Bolt, Cursor, or Replit app. I can walk you through what to check and write a repair prompt you can paste directly into your builder.',
+  timestamp: 'Now',
+};
 
 /**
  * Generates a realistic demo PNG screenshot on an HTML5 canvas so visitors
@@ -126,6 +143,30 @@ function buildDemoBrokenAppScreenshot(): string {
   return canvas.toDataURL('image/png');
 }
 
+function renderInlineFormatted(text: string) {
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+  return tokens.map((token, idx) => {
+    if (token.startsWith('`') && token.endsWith('`') && token.length > 2) {
+      return (
+        <code
+          key={idx}
+          className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 font-mono text-xs text-slate-900 dark:text-slate-100"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+      return (
+        <strong key={idx} className="font-semibold text-slate-900 dark:text-white">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <span key={idx}>{token}</span>;
+  });
+}
+
 function renderMessageLines(text: string) {
   const segments = text.split(/(```[\s\S]*?```)/g);
   return segments.map((segment, index) => {
@@ -150,16 +191,30 @@ function renderMessageLines(text: string) {
           if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             return (
               <p key={lineIdx} className="pl-4 relative text-sm leading-relaxed">
-                <span aria-hidden="true" className="absolute left-0 text-slate-400 dark:text-slate-500">
+                <span aria-hidden="true" className="absolute left-0 text-slate-500 dark:text-slate-400">
                   •
                 </span>
-                {trimmed.slice(2)}
+                {renderInlineFormatted(trimmed.slice(2))}
+              </p>
+            );
+          }
+          const numberedMatch = trimmed.match(/^(\d+\.)\s+(.*)$/);
+          if (numberedMatch) {
+            return (
+              <p key={lineIdx} className="pl-6 relative text-sm leading-relaxed">
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 font-mono text-xs text-slate-500 dark:text-slate-400 tabular-nums leading-6"
+                >
+                  {numberedMatch[1]}
+                </span>
+                {renderInlineFormatted(numberedMatch[2])}
               </p>
             );
           }
           return (
             <p key={lineIdx} className="text-sm leading-relaxed">
-              {trimmed}
+              {renderInlineFormatted(trimmed)}
             </p>
           );
         })}
@@ -172,7 +227,7 @@ function SeverityIndicator({ severity }: { severity: FindingSeverity }) {
   if (severity === 'Critical') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400">
-        <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+        <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         <span>Critical</span>
       </span>
     );
@@ -180,14 +235,14 @@ function SeverityIndicator({ severity }: { severity: FindingSeverity }) {
   if (severity === 'Warning') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         <span>Warning</span>
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-      <Info className="w-3.5 h-3.5 shrink-0" />
+      <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
       <span>Suggestion</span>
     </span>
   );
@@ -196,8 +251,10 @@ function SeverityIndicator({ severity }: { severity: FindingSeverity }) {
 export function LiveQAStudio() {
   const [activeTab, setActiveTab] = useState<'screenshot' | 'chat'>('screenshot');
 
-  // Screenshot Analyzer state
+  // Shared builder selection across Screenshot Audit & Advisor tabs
   const [builderTool, setBuilderTool] = useState<BuilderTool>('Lovable');
+
+  // Screenshot Analyzer state
   const [focusNote, setFocusNote] = useState('');
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -206,29 +263,63 @@ export function LiveQAStudio() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<ScreenshotAnalysisResult | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [statusAnnouncement, setStatusAnnouncement] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const tabScreenshotRef = useRef<HTMLButtonElement | null>(null);
+  const tabChatRef = useRef<HTMLButtonElement | null>(null);
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
+  const copyPromptTimerRef = useRef<number | null>(null);
+  const copyAllTimerRef = useRef<number | null>(null);
+  const copyMsgTimerRef = useRef<number | null>(null);
 
   // Multi-turn AI Chat state
-  const [chatBuilder, setChatBuilder] = useState<BuilderTool>('Lovable');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'model',
-      text: 'Ask me about any fragile flow, auth bug, or potential data exposure in your Lovable, Bolt, Cursor, or Replit app. I can walk you through what to check and write a repair prompt you can paste directly into your builder.',
-      timestamp: 'Now',
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [archivedMessages, setArchivedMessages] = useState<ChatMessage[] | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const prevMsgCountRef = useRef<number>(1);
 
   useEffect(() => {
-    if (activeTab === 'chat') {
-      threadEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return () => {
+      if (copyPromptTimerRef.current !== null) window.clearTimeout(copyPromptTimerRef.current);
+      if (copyAllTimerRef.current !== null) window.clearTimeout(copyAllTimerRef.current);
+      if (copyMsgTimerRef.current !== null) window.clearTimeout(copyMsgTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'chat' && (messages.length > prevMsgCountRef.current || chatSending)) {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      threadEndRef.current?.scrollIntoView({
+        behavior: reduced ? 'auto' : 'smooth',
+        block: 'nearest',
+      });
     }
+    prevMsgCountRef.current = messages.length;
   }, [messages, chatSending, activeTab]);
+
+  function handleTabKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const next = activeTab === 'screenshot' ? 'chat' : 'screenshot';
+      setActiveTab(next);
+      (next === 'screenshot' ? tabScreenshotRef.current : tabChatRef.current)?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActiveTab('screenshot');
+      tabScreenshotRef.current?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActiveTab('chat');
+      tabChatRef.current?.focus();
+    }
+  }
 
   function processSelectedFile(file: File) {
     setAnalysisError(null);
@@ -247,7 +338,8 @@ export function LiveQAStudio() {
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         setPreviewDataUrl(reader.result);
-        setFileName(file.name);
+        setFileName(file.name || 'pasted-screenshot.png');
+        setStatusAnnouncement('Screenshot loaded and ready for audit.');
       }
     };
     reader.onerror = () => {
@@ -272,6 +364,17 @@ export function LiveQAStudio() {
     }
   }
 
+  function handlePasteScreenshot(e: ClipboardEvent<HTMLDivElement>) {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imageItem = items.find((item) => item.type.startsWith('image/'));
+    if (!imageItem) return;
+    const file = imageItem.getAsFile();
+    if (file) {
+      e.preventDefault();
+      processSelectedFile(file);
+    }
+  }
+
   function handleLoadDemoScreenshot() {
     setAnalysisError(null);
     setAnalysisResult(null);
@@ -283,7 +386,10 @@ export function LiveQAStudio() {
     setPreviewDataUrl(dataUrl);
     setFileName('demo-checkout-preview.png');
     setBuilderTool('Bolt');
-    setFocusNote('Check for exposed secrets, broken checkout layout, and data leaks.');
+    if (!focusNote.trim()) {
+      setFocusNote('Check for exposed secrets, broken checkout layout, and data leaks.');
+    }
+    setStatusAnnouncement('Demo app screenshot loaded.');
   }
 
   function handleClearScreenshot() {
@@ -294,6 +400,7 @@ export function LiveQAStudio() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    setStatusAnnouncement('Screenshot removed.');
   }
 
   async function handleAnalyzeScreenshot(e: FormEvent) {
@@ -320,7 +427,13 @@ export function LiveQAStudio() {
         setAnalysisError(data?.error || 'Could not complete the screenshot audit.');
         return;
       }
-      setAnalysisResult(data as ScreenshotAnalysisResult);
+      const typed = data as ScreenshotAnalysisResult;
+      setAnalysisResult(typed);
+      setStatusAnnouncement(
+        `Screenshot audit complete: ${typed.readinessStatus}, ${typed.findings.length} ${
+          typed.findings.length === 1 ? 'finding' : 'findings'
+        }.`
+      );
     } catch {
       setAnalysisError('Network error while contacting the audit service. Please try again.');
     } finally {
@@ -332,27 +445,61 @@ export function LiveQAStudio() {
     try {
       await navigator.clipboard.writeText(text);
       onDone();
+      setStatusAnnouncement('Copied to clipboard.');
+      return;
     } catch {
-      // Clipboard blocked in some iframe contexts; fail silently without throwing
+      // Fallback for restricted clipboard contexts
+    }
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (ok) {
+        onDone();
+        setStatusAnnouncement('Copied to clipboard.');
+      }
+    } catch {
+      // Ignore if clipboard is completely unavailable
     }
   }
 
-  async function sendChatMessage(rawText: string) {
+  function handleAskAdvisorAboutFinding(finding: ScreenshotFinding) {
+    const prompt = `In my ${builderTool} app, Proofline flagged "${finding.title}" (${finding.category}): ${finding.detail} How should I verify the fix safely?`;
+    setActiveTab('chat');
+    setChatInput(prompt);
+    window.setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 50);
+  }
+
+  async function sendChatMessage(rawText: string, isRetry = false) {
     const trimmed = rawText.trim();
     if (!trimmed || chatSending) return;
 
     setChatError(null);
-    const nowLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text: trimmed,
-      timestamp: nowLabel,
-    };
+    setFailedPrompt(null);
+    setArchivedMessages(null);
 
-    const nextHistory = [...messages, userMsg];
-    setMessages(nextHistory);
-    setChatInput('');
+    let nextHistory = messages;
+    if (!isRetry) {
+      const nowLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        text: trimmed,
+        timestamp: nowLabel,
+      };
+      nextHistory = [...messages, userMsg];
+      setMessages(nextHistory);
+      setChatInput('');
+    }
+
     setChatSending(true);
 
     try {
@@ -366,12 +513,13 @@ export function LiveQAStudio() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: apiMessages,
-          builderContext: chatBuilder,
+          builderContext: builderTool,
         }),
       });
       const data = await response.json();
       if (!response.ok) {
         setChatError(data?.error || 'Could not reach the QA advisor right now.');
+        setFailedPrompt(trimmed);
         return;
       }
 
@@ -384,6 +532,7 @@ export function LiveQAStudio() {
       setMessages((prev) => [...prev, replyMsg]);
     } catch {
       setChatError('Network error while sending your message. Please try again.');
+      setFailedPrompt(trimmed);
     } finally {
       setChatSending(false);
     }
@@ -396,6 +545,10 @@ export function LiveQAStudio() {
 
   function handleResetChat() {
     setChatError(null);
+    setFailedPrompt(null);
+    if (messages.length > 1) {
+      setArchivedMessages(messages);
+    }
     setMessages([
       {
         id: 'welcome',
@@ -406,26 +559,35 @@ export function LiveQAStudio() {
     ]);
   }
 
+  function handleUndoResetChat() {
+    if (!archivedMessages) return;
+    setMessages(archivedMessages);
+    setArchivedMessages(null);
+    setChatError(null);
+    setFailedPrompt(null);
+  }
+
   return (
     <section
       id="live-audit"
-      className="py-20 lg:py-28 border-t border-slate-200 dark:border-slate-800/90 bg-[#F8FAFC] dark:bg-[#090D16] transition-colors duration-150"
+      className="scroll-mt-20 py-20 lg:py-28 border-t border-slate-200 dark:border-slate-800/90 bg-[#F8FAFC] dark:bg-[#090D16] transition-colors duration-150"
     >
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {statusAnnouncement}
+      </div>
+
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Try Proofline before joining
-            </p>
             <h2
-              className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
+              className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
               style={{ textWrap: 'balance' }}
             >
               Run a live audit on your app right now.
             </h2>
-            <p className="mt-4 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-              Upload any screenshot from Lovable, Bolt, or Cursor to catch visible exposures and
-              broken states—or chat with our QA advisor for a tailored pre-launch checklist.
+            <p className="mt-4 max-w-[54ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+              Upload or paste a screenshot from Lovable, Bolt, or Cursor to catch visible exposures
+              and broken states—or chat with our QA advisor for a tailored pre-launch checklist.
             </p>
           </div>
 
@@ -433,34 +595,44 @@ export function LiveQAStudio() {
           <div
             role="tablist"
             aria-label="Live QA Studio modes"
-            className="inline-flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-[#111827] border border-transparent dark:border-slate-800 rounded-lg self-start lg:self-auto"
+            className="inline-flex flex-wrap items-center gap-1 p-1 max-w-full bg-slate-200/70 dark:bg-[#111827] border border-transparent dark:border-slate-800 rounded-lg self-start lg:self-auto"
           >
             <button
+              ref={tabScreenshotRef}
+              id="tab-screenshot"
               type="button"
               role="tab"
               aria-selected={activeTab === 'screenshot'}
+              aria-controls="panel-screenshot"
+              tabIndex={activeTab === 'screenshot' ? 0 : -1}
               onClick={() => setActiveTab('screenshot')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer ${
+              onKeyDown={handleTabKeyDown}
+              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                 activeTab === 'screenshot'
                   ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-[#F8FAFC] shadow-xs dark:shadow-none'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              <ScanSearch className="w-4 h-4 shrink-0" />
+              <ScanSearch className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Screenshot Audit</span>
             </button>
             <button
+              ref={tabChatRef}
+              id="tab-chat"
               type="button"
               role="tab"
               aria-selected={activeTab === 'chat'}
+              aria-controls="panel-chat"
+              tabIndex={activeTab === 'chat' ? 0 : -1}
               onClick={() => setActiveTab('chat')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer ${
+              onKeyDown={handleTabKeyDown}
+              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                 activeTab === 'chat'
                   ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-[#F8FAFC] shadow-xs dark:shadow-none'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              <MessageSquare className="w-4 h-4 shrink-0" />
+              <MessageSquare className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>QA & Security Advisor</span>
             </button>
           </div>
@@ -468,7 +640,13 @@ export function LiveQAStudio() {
 
         {/* Tab Panel 1: Screenshot QA & Security Analyzer */}
         {activeTab === 'screenshot' && (
-          <div className="mt-10 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+          <div
+            id="panel-screenshot"
+            role="tabpanel"
+            aria-labelledby="tab-screenshot"
+            onPaste={handlePasteScreenshot}
+            className="mt-10 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden"
+          >
             <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-800">
               {/* Left: Upload & Controls */}
               <form
@@ -478,14 +656,18 @@ export function LiveQAStudio() {
                 <div className="space-y-5">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <label className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC]">
+                      <label
+                        id="screenshot-upload-label"
+                        htmlFor="screenshot-file-input"
+                        className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC]"
+                      >
                         App screenshot
                       </label>
                       {!previewDataUrl ? (
                         <button
                           type="button"
                           onClick={handleLoadDemoScreenshot}
-                          className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+                          className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                         >
                           Load demo app screenshot
                         </button>
@@ -493,9 +675,9 @@ export function LiveQAStudio() {
                         <button
                           type="button"
                           onClick={handleClearScreenshot}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 cursor-pointer whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>Remove</span>
                         </button>
                       )}
@@ -504,6 +686,7 @@ export function LiveQAStudio() {
                     <input
                       ref={fileInputRef}
                       type="file"
+                      tabIndex={-1}
                       accept="image/png,image/jpeg,image/webp"
                       onChange={handleFileChange}
                       className="sr-only"
@@ -516,29 +699,42 @@ export function LiveQAStudio() {
                           e.preventDefault();
                           setIsDragging(true);
                         }}
-                        onDragLeave={() => setIsDragging(false)}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            setIsDragging(false);
+                          }
+                        }}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         role="button"
                         tabIndex={0}
+                        aria-labelledby="screenshot-upload-label"
+                        aria-describedby="screenshot-upload-hint"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             fileInputRef.current?.click();
                           }
                         }}
-                        className={`p-8 border border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+                        className={`p-7 border border-dashed rounded-lg text-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                           isDragging
                             ? 'border-[#1E40AF] dark:border-[#3B82F6] bg-[#1E40AF]/5 dark:bg-[#3B82F6]/10'
                             : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-[#F8FAFC] dark:bg-[#090D16]'
                         }`}
                       >
-                        <Upload className="w-6 h-6 text-slate-500 dark:text-slate-400 mx-auto mb-3" />
+                        <Upload
+                          className="w-6 h-6 text-slate-600 dark:text-slate-400 mx-auto mb-3"
+                          aria-hidden="true"
+                        />
                         <p className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-                          Drop a screenshot here, or browse files
+                          Drop, browse, or paste screenshot (Ctrl+V)
                         </p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          PNG, JPEG, or WebP up to 8 MB · Analyzed in memory, never stored
+                        <p
+                          id="screenshot-upload-hint"
+                          className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed"
+                        >
+                          PNG, JPEG, or WebP up to 8 MB · Crop real customer PII first · Analyzed in
+                          memory, never stored
                         </p>
                       </div>
                     ) : (
@@ -553,7 +749,7 @@ export function LiveQAStudio() {
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+                            className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline whitespace-nowrap shrink-0 cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                           >
                             Replace
                           </button>
@@ -574,7 +770,7 @@ export function LiveQAStudio() {
                         id="audit-builder-select"
                         value={builderTool}
                         onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
-                        className="w-full px-3 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 cursor-pointer"
+                        className="w-full px-3 py-2.5 min-h-[42px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 cursor-pointer"
                       >
                         {BUILDERS.map((tool) => (
                           <option key={tool} value={tool}>
@@ -595,9 +791,9 @@ export function LiveQAStudio() {
                         type="text"
                         value={focusNote}
                         onChange={(e) => setFocusNote(e.target.value)}
-                        placeholder="e.g., Auth screen or Stripe checkout"
+                        placeholder="e.g., Auth or checkout"
                         maxLength={200}
-                        className="w-full px-3 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
+                        className="w-full px-3 py-2.5 min-h-[42px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
                       />
                     </div>
                   </div>
@@ -609,7 +805,10 @@ export function LiveQAStudio() {
                       role="alert"
                       className="p-3.5 text-xs text-rose-800 dark:text-rose-200 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/70 rounded-lg flex items-start gap-2"
                     >
-                      <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <AlertTriangle
+                        className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
                       <span>{analysisError}</span>
                     </div>
                   )}
@@ -617,7 +816,7 @@ export function LiveQAStudio() {
                   <button
                     type="submit"
                     disabled={analyzing || !previewDataUrl}
-                    className="w-full px-5 py-3 text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                    className="w-full px-5 py-3 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                   >
                     {analyzing ? 'Inspecting screenshot...' : 'Run QA & Security Audit'}
                   </button>
@@ -628,19 +827,28 @@ export function LiveQAStudio() {
               <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col">
                 {analyzing ? (
                   <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-[#1E40AF] dark:border-t-[#3B82F6] animate-spin mb-4" />
+                    <div
+                      aria-hidden="true"
+                      className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-[#1E40AF] dark:border-t-[#3B82F6] animate-spin mb-4"
+                    />
                     <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
                       Checking flows, layout integrity, and visible exposures
                     </p>
-                    <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                    <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 max-w-md">
                       Reviewing your {builderTool} screenshot and drafting copy-ready repair
                       prompts...
                     </p>
                   </div>
                 ) : !analysisResult ? (
                   <div className="flex-1 flex flex-col items-center justify-center py-14 text-center">
-                    <ImageIcon className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-3" />
-                    <p className="font-display text-lg font-semibold text-slate-900 dark:text-[#F8FAFC]">
+                    <ImageIcon
+                      className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-3"
+                      aria-hidden="true"
+                    />
+                    <p
+                      className="font-display text-lg font-semibold text-slate-900 dark:text-[#F8FAFC]"
+                      style={{ textWrap: 'balance' }}
+                    >
                       Your diagnostic report appears here
                     </p>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-md leading-relaxed">
@@ -648,7 +856,7 @@ export function LiveQAStudio() {
                       <button
                         type="button"
                         onClick={handleLoadDemoScreenshot}
-                        className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer"
+                        className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
                         Load demo app screenshot
                       </button>{' '}
@@ -660,7 +868,7 @@ export function LiveQAStudio() {
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
                           <span>{analysisResult.checkedArea}</span>
                           <span aria-hidden="true" className="mx-2 text-slate-300 dark:text-slate-700">
                             ·
@@ -679,23 +887,57 @@ export function LiveQAStudio() {
                         </h3>
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm font-semibold">
-                        {analysisResult.readinessStatus === 'Ready to Ship' ? (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Ready to Ship</span>
-                          </span>
-                        ) : analysisResult.readinessStatus === 'High Risk' ? (
-                          <span className="inline-flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
-                            <ShieldAlert className="w-4 h-4" />
-                            <span>High Risk</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span>Needs Fixes</span>
-                          </span>
-                        )}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const bundle = analysisResult.findings
+                              .map(
+                                (f, idx) =>
+                                  `${idx + 1}. [${f.severity} · ${f.category}] ${f.title}\n${f.fixPrompt}`
+                              )
+                              .join('\n\n');
+                            void handleCopyText(bundle, () => {
+                              setCopiedAll(true);
+                              copyAllTimerRef.current = window.setTimeout(
+                                () => setCopiedAll(false),
+                                2000
+                              );
+                            });
+                          }}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                        >
+                          {copiedAll ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Copied all fixes</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Copy all fixes</span>
+                            </>
+                          )}
+                        </button>
+
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                          {analysisResult.readinessStatus === 'Ready to Ship' ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                              <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                              <span>Ready to Ship</span>
+                            </span>
+                          ) : analysisResult.readinessStatus === 'High Risk' ? (
+                            <span className="inline-flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
+                              <ShieldAlert className="w-4 h-4" aria-hidden="true" />
+                              <span>High Risk</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                              <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                              <span>Needs Fixes</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -712,10 +954,18 @@ export function LiveQAStudio() {
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                                 ·
                               </span>
-                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                              <span className="text-xs text-slate-600 dark:text-slate-400">
                                 {finding.category}
                               </span>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAskAdvisorAboutFinding(finding)}
+                              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#1E40AF] dark:hover:text-[#60A5FA] cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Ask Advisor</span>
+                            </button>
                           </div>
 
                           <div>
@@ -729,27 +979,33 @@ export function LiveQAStudio() {
 
                           <div className="bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 rounded-lg p-3.5">
                             <div className="flex items-center justify-between gap-3 mb-1.5">
-                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                                 Paste into {builderTool}
                               </span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleCopyText(finding.fixPrompt, () => {
+                                onClick={() => {
+                                  if (copyPromptTimerRef.current !== null) {
+                                    window.clearTimeout(copyPromptTimerRef.current);
+                                  }
+                                  void handleCopyText(finding.fixPrompt, () => {
                                     setCopiedIdx(idx);
-                                    window.setTimeout(() => setCopiedIdx(null), 2000);
-                                  })
-                                }
-                                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:text-[#1D4ED8] dark:hover:text-[#93C5FD] cursor-pointer whitespace-nowrap"
+                                    copyPromptTimerRef.current = window.setTimeout(
+                                      () => setCopiedIdx(null),
+                                      2000
+                                    );
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:text-[#1D4ED8] dark:hover:text-[#93C5FD] cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                               >
                                 {copiedIdx === idx ? (
                                   <>
-                                    <Check className="w-3.5 h-3.5" />
+                                    <Check className="w-3.5 h-3.5" aria-hidden="true" />
                                     <span>Copied</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Copy className="w-3.5 h-3.5" />
+                                    <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                                     <span>Copy fix prompt</span>
                                   </>
                                 )}
@@ -771,7 +1027,12 @@ export function LiveQAStudio() {
 
         {/* Tab Panel 2: Multi-turn AI QA & Security Advisor Chat */}
         {activeTab === 'chat' && (
-          <div className="mt-10 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col">
+          <div
+            id="panel-chat"
+            role="tabpanel"
+            aria-labelledby="tab-chat"
+            className="mt-10 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col"
+          >
             {/* Chat utility header */}
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-[#F8FAFC] dark:bg-[#0D1321]">
               <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -783,15 +1044,15 @@ export function LiveQAStudio() {
                 </span>
                 <label
                   htmlFor="chat-builder-select"
-                  className="text-xs text-slate-500 dark:text-slate-400"
+                  className="text-xs text-slate-600 dark:text-slate-400"
                 >
                   Stack context:
                 </label>
                 <select
                   id="chat-builder-select"
-                  value={chatBuilder}
-                  onChange={(e) => setChatBuilder(e.target.value as BuilderTool)}
-                  className="px-2.5 py-1 text-xs font-medium bg-white dark:bg-[#090D16] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] cursor-pointer"
+                  value={builderTool}
+                  onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
+                  className="px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-[#090D16] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] cursor-pointer"
                 >
                   {BUILDERS.map((tool) => (
                     <option key={tool} value={tool}>
@@ -801,19 +1062,30 @@ export function LiveQAStudio() {
                 </select>
               </div>
 
-              <button
-                type="button"
-                onClick={handleResetChat}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer whitespace-nowrap"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset thread</span>
-              </button>
+              <div className="flex items-center gap-4">
+                {archivedMessages && (
+                  <button
+                    type="button"
+                    onClick={handleUndoResetChat}
+                    className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                  >
+                    Undo reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetChat}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Reset thread</span>
+                </button>
+              </div>
             </div>
 
             {/* Scrollable conversation thread */}
             <div
-              className="h-[440px] overflow-y-auto px-6 py-6 space-y-6 bg-white dark:bg-[#111827]"
+              className="max-h-[440px] min-h-[300px] overflow-y-auto px-6 py-6 space-y-6 bg-white dark:bg-[#111827]"
               aria-live="polite"
             >
               {messages.map((msg) => {
@@ -823,7 +1095,7 @@ export function LiveQAStudio() {
                     key={msg.id}
                     className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1.5">
                       <span className="font-medium text-slate-700 dark:text-slate-300">
                         {isUser ? 'You' : 'Proofline Advisor'}
                       </span>
@@ -850,22 +1122,31 @@ export function LiveQAStudio() {
                     {!isUser && msg.id !== 'welcome' && (
                       <button
                         type="button"
-                        onClick={() =>
-                          handleCopyText(msg.text, () => {
+                        onClick={() => {
+                          if (copyMsgTimerRef.current !== null) {
+                            window.clearTimeout(copyMsgTimerRef.current);
+                          }
+                          void handleCopyText(msg.text, () => {
                             setCopiedMsgId(msg.id);
-                            window.setTimeout(() => setCopiedMsgId(null), 2000);
-                          })
-                        }
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer"
+                            copyMsgTimerRef.current = window.setTimeout(
+                              () => setCopiedMsgId(null),
+                              2000
+                            );
+                          });
+                        }}
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
                         {copiedMsgId === msg.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                            <Check
+                              className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400"
+                              aria-hidden="true"
+                            />
                             <span>Copied response</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>Copy</span>
                           </>
                         )}
@@ -880,7 +1161,7 @@ export function LiveQAStudio() {
                   <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Proofline Advisor
                   </span>
-                  <div className="bg-[#F8FAFC] dark:bg-[#161F33] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="bg-[#F8FAFC] dark:bg-[#161F33] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                     Reviewing your question and preparing checks...
                   </div>
                 </div>
@@ -898,7 +1179,7 @@ export function LiveQAStudio() {
                     type="button"
                     onClick={() => void sendChatMessage(prompt)}
                     disabled={chatSending}
-                    className="text-left text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-[#111827] hover:border-[#1E40AF] dark:hover:border-[#3B82F6] hover:text-[#1E40AF] dark:hover:text-[#60A5FA] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 transition-colors cursor-pointer"
+                    className="text-left text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-[#111827] hover:border-[#1E40AF] dark:hover:border-[#3B82F6] hover:text-[#1E40AF] dark:hover:text-[#60A5FA] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                   >
                     {prompt}
                   </button>
@@ -909,13 +1190,25 @@ export function LiveQAStudio() {
             {/* Chat error + input bar */}
             <div className="p-4 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#0D1321]">
               {chatError && (
-                <p
+                <div
                   role="alert"
-                  className="mb-3 flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400"
+                  className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-rose-700 dark:text-rose-400"
                 >
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{chatError}</span>
-                </p>
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    <span>{chatError}</span>
+                  </span>
+                  {failedPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => void sendChatMessage(failedPrompt, true)}
+                      disabled={chatSending}
+                      className="font-semibold underline underline-offset-4 hover:text-rose-900 dark:hover:text-rose-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 rounded-sm"
+                    >
+                      Retry message
+                    </button>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handleChatSubmit} className="flex items-center gap-2.5">
@@ -923,21 +1216,22 @@ export function LiveQAStudio() {
                   Ask Proofline Advisor a QA or security question
                 </label>
                 <input
+                  ref={chatInputRef}
                   id="advisor-chat-input"
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Ask about testing, auth, or security in your ${chatBuilder} app...`}
+                  placeholder={`Ask about testing, auth, or security in your ${builderTool} app...`}
                   maxLength={2000}
                   disabled={chatSending}
-                  className="flex-1 min-w-0 px-4 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
+                  className="flex-1 min-w-0 px-4 py-2.5 min-h-[44px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
                 />
                 <button
                   type="submit"
                   disabled={chatSending || !chatInput.trim()}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4" aria-hidden="true" />
                   <span>Send</span>
                 </button>
               </form>
