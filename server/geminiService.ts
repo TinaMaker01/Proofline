@@ -338,7 +338,7 @@ export async function chatWithGeminiAdvisor(
       'You are Proofline’s QA & Security Advisor, helping non-technical creators and lean startup founders test, secure, and fix apps built with AI coding tools like Lovable, Bolt, Cursor, Replit, and v0.',
       `Current builder context: ${builderContext}.`,
       locale === 'fr'
-        ? 'Respond in clear, natural French while keeping AI tool names (Lovable, Bolt, Cursor, Replit, v0) and code identifiers unchanged.'
+        ? 'Respond in clear, natural French using informal "tu" (tutoiement: tu, ton, ta, tes) to match Proofline’s calm, direct voice, while keeping AI tool names (Lovable, Bolt, Cursor, Replit, v0) and code identifiers unchanged.'
         : 'Respond in clear, direct, plain English without intimidating jargon.',
       'Style guidelines:',
       '- Give concrete step-by-step checks and, whenever helpful, include a short copy-ready prompt in a fenced code block that the creator can paste directly into their AI builder.',

@@ -7,6 +7,7 @@ import {
   type DragEvent,
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 import {
   Upload,
@@ -14,6 +15,8 @@ import {
   MessageSquare,
   AlertTriangle,
   ShieldAlert,
+  ShieldCheck,
+  User,
   CheckCircle2,
   Info,
   Copy,
@@ -137,84 +140,335 @@ function buildDemoBrokenAppScreenshot(): string {
   return canvas.toDataURL('image/png');
 }
 
-function renderInlineFormatted(text: string) {
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
-  return tokens.map((token, idx) => {
+const INLINE_TOKEN_RE = /(`[^`]+`|\*\*[\s\S]+?\*\*|\*(?!\s)[^*\n]+?(?<!\s)\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
+
+function renderInlineFormatted(text: string, keyPrefix = 'in'): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const regex = new RegExp(INLINE_TOKEN_RE.source, 'g');
+  let partIdx = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+
+    const token = match[0];
+    const key = `${keyPrefix}-${partIdx++}`;
+
     if (token.startsWith('`') && token.endsWith('`') && token.length > 2) {
-      return (
+      nodes.push(
         <code
-          key={idx}
-          className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 font-mono text-xs text-slate-900 dark:text-slate-100"
+          key={key}
+          className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800/90 font-mono text-[12px] text-slate-900 dark:text-slate-100"
         >
           {token.slice(1, -1)}
         </code>
       );
-    }
-    if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
-      return (
-        <strong key={idx} className="font-semibold text-slate-900 dark:text-white">
-          {token.slice(2, -2)}
+    } else if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+      nodes.push(
+        <strong key={key} className="font-semibold text-slate-900 dark:text-white">
+          {renderInlineFormatted(token.slice(2, -2), key)}
         </strong>
       );
+    } else if (token.startsWith('*') && token.endsWith('*') && token.length > 2) {
+      nodes.push(
+        <em key={key} className="italic text-slate-800 dark:text-slate-200">
+          {renderInlineFormatted(token.slice(1, -1), key)}
+        </em>
+      );
+    } else if (token.startsWith('[')) {
+      const linkMatch = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      if (linkMatch) {
+        nodes.push(
+          <a
+            key={key}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#1E40AF] dark:text-[#60A5FA] underline underline-offset-2 hover:text-[#1D4ED8] dark:hover:text-[#93C5FD]"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        nodes.push(token);
+      }
+    } else {
+      nodes.push(token);
     }
-    return <span key={idx}>{token}</span>;
-  });
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
 }
 
-function renderMessageLines(text: string) {
-  const segments = text.split(/(```[\s\S]*?```)/g);
-  return segments.map((segment, index) => {
-    if (segment.startsWith('```') && segment.endsWith('```')) {
-      const cleaned = segment.replace(/^```[a-zA-Z0-9_-]*\n?/, '').replace(/\n?```$/, '');
-      return (
-        <pre
-          key={index}
-          className="my-3 p-3.5 bg-slate-900 dark:bg-[#090D16] text-slate-100 border border-slate-800 rounded-lg overflow-x-auto font-mono text-xs leading-relaxed"
+function CodeSnippetBlock({
+  code,
+  language,
+  copyLabel,
+  copiedLabel,
+  defaultLabel,
+  onCopied,
+}: {
+  code: string;
+  language: string;
+  copyLabel: string;
+  copiedLabel: string;
+  defaultLabel: string;
+  onCopied?: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  async function handleCopyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      const helper = document.createElement('textarea');
+      helper.value = code;
+      helper.style.position = 'fixed';
+      helper.style.opacity = '0';
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand('copy');
+      document.body.removeChild(helper);
+    }
+    setCopied(true);
+    onCopied?.();
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+    }
+    timerRef.current = window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="my-3 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 dark:bg-[#090D16]">
+      <div className="flex items-center justify-between gap-2 px-3.5 py-2 bg-slate-900/90 dark:bg-[#0D1321] border-b border-slate-800">
+        <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
+          {language || defaultLabel}
+        </span>
+        <button
+          type="button"
+          onClick={() => void handleCopyCode()}
+          aria-label={copied ? copiedLabel : copyLabel}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-white cursor-pointer py-0.5 px-1.5 rounded transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#60A5FA]"
         >
-          <code>{cleaned}</code>
-        </pre>
-      );
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
+              <span className="text-emerald-300">{copiedLabel}</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>{copyLabel}</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre className="p-3.5 text-slate-100 overflow-x-auto font-mono text-xs leading-relaxed">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+function renderMarkdownBlocks(segment: string, keyPrefix: string): ReactNode[] {
+  const lines = segment.split('\n');
+  const blocks: ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      i += 1;
+      continue;
     }
 
-    const lines = segment.split('\n');
-    return (
-      <div key={index} className="space-y-2">
-        {lines.map((line, lineIdx) => {
-          const trimmed = line.trim();
-          if (!trimmed) return null;
-          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            return (
-              <p key={lineIdx} className="pl-4 relative text-sm leading-relaxed">
-                <span aria-hidden="true" className="absolute left-0 text-slate-500 dark:text-slate-400">
-                  •
-                </span>
-                {renderInlineFormatted(trimmed.slice(2))}
-              </p>
-            );
-          }
-          const numberedMatch = trimmed.match(/^(\d+\.)\s+(.*)$/);
-          if (numberedMatch) {
-            return (
-              <p key={lineIdx} className="pl-6 relative text-sm leading-relaxed">
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 font-mono text-xs text-slate-500 dark:text-slate-400 tabular-nums leading-6"
-                >
-                  {numberedMatch[1]}
-                </span>
-                {renderInlineFormatted(numberedMatch[2])}
-              </p>
-            );
-          }
-          return (
-            <p key={lineIdx} className="text-sm leading-relaxed">
-              {renderInlineFormatted(trimmed)}
+    // Horizontal rule
+    if (/^(-{3,}|\*{3,})$/.test(trimmed)) {
+      blocks.push(<hr key={`${keyPrefix}-hr-${i}`} className="my-3 border-slate-200 dark:border-slate-800" />);
+      i += 1;
+      continue;
+    }
+
+    // Headings (# .. ####)
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const content = renderInlineFormatted(headingMatch[2], `${keyPrefix}-h-${i}`);
+      if (level <= 2) {
+        blocks.push(
+          <h4
+            key={`${keyPrefix}-h-${i}`}
+            className="pt-2 font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC] leading-snug"
+          >
+            {content}
+          </h4>
+        );
+      } else {
+        blocks.push(
+          <h5
+            key={`${keyPrefix}-h-${i}`}
+            className="pt-1.5 font-display text-sm font-semibold text-slate-900 dark:text-[#F8FAFC] leading-snug"
+          >
+            {content}
+          </h5>
+        );
+      }
+      i += 1;
+      continue;
+    }
+
+    // Blockquote
+    if (trimmed.startsWith('> ')) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('> ')) {
+        quoteLines.push(lines[i].trim().slice(2));
+        i += 1;
+      }
+      blocks.push(
+        <blockquote
+          key={`${keyPrefix}-q-${i}`}
+          className="border-l-2 border-[#1E40AF]/40 dark:border-[#60A5FA]/40 pl-3 py-0.5 text-sm text-slate-600 dark:text-slate-400 space-y-1"
+        >
+          {quoteLines.map((qLine, qIdx) => (
+            <p key={qIdx} className="leading-relaxed">
+              {renderInlineFormatted(qLine, `${keyPrefix}-ql-${i}-${qIdx}`)}
             </p>
-          );
-        })}
-      </div>
+          ))}
+        </blockquote>
+      );
+      continue;
+    }
+
+    // Bullet list
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      const items: string[] = [];
+      const startIdx = i;
+      while (i < lines.length) {
+        const cur = lines[i].trim();
+        if (cur.startsWith('- ') || cur.startsWith('* ')) {
+          items.push(cur.slice(2));
+          i += 1;
+        } else {
+          break;
+        }
+      }
+      blocks.push(
+        <ul key={`${keyPrefix}-ul-${startIdx}`} className="space-y-1.5 pl-4 list-disc marker:text-slate-400 dark:marker:text-slate-500">
+          {items.map((item, idx) => (
+            <li key={idx} className="text-sm leading-relaxed pl-1">
+              {renderInlineFormatted(item, `${keyPrefix}-uli-${startIdx}-${idx}`)}
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const items: { num: string; text: string }[] = [];
+      const startIdx = i;
+      while (i < lines.length) {
+        const numMatch = lines[i].trim().match(/^(\d+\.)\s+(.*)$/);
+        if (numMatch) {
+          items.push({ num: numMatch[1], text: numMatch[2] });
+          i += 1;
+        } else {
+          break;
+        }
+      }
+      blocks.push(
+        <ol key={`${keyPrefix}-ol-${startIdx}`} className="space-y-1.5">
+          {items.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed">
+              <span
+                aria-hidden="true"
+                className="font-mono text-xs text-slate-500 dark:text-slate-400 tabular-nums leading-6 shrink-0"
+              >
+                {item.num}
+              </span>
+              <span className="min-w-0">
+                {renderInlineFormatted(item.text, `${keyPrefix}-oli-${startIdx}-${idx}`)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    // Paragraph
+    blocks.push(
+      <p key={`${keyPrefix}-p-${i}`} className="text-sm leading-relaxed">
+        {renderInlineFormatted(trimmed, `${keyPrefix}-p-${i}`)}
+      </p>
     );
-  });
+    i += 1;
+  }
+
+  return blocks;
+}
+
+function renderMessageLines(
+  text: string,
+  snippetLabels: {
+    copyLabel: string;
+    copiedLabel: string;
+    defaultLabel: string;
+    onCopied?: () => void;
+  }
+) {
+  const segments = text.split(/(```[\s\S]*?```)/g);
+  return (
+    <div className="space-y-2.5">
+      {segments.map((segment, index) => {
+        if (segment.startsWith('```') && segment.endsWith('```')) {
+          const langMatch = segment.match(/^```([a-zA-Z0-9_-]*)\n?/);
+          const language = langMatch?.[1] ?? '';
+          const cleaned = segment
+            .replace(/^```[a-zA-Z0-9_-]*\n?/, '')
+            .replace(/\n?```$/, '');
+          return (
+            <CodeSnippetBlock
+              key={`code-${index}`}
+              code={cleaned}
+              language={language}
+              copyLabel={snippetLabels.copyLabel}
+              copiedLabel={snippetLabels.copiedLabel}
+              defaultLabel={snippetLabels.defaultLabel}
+              onCopied={snippetLabels.onCopied}
+            />
+          );
+        }
+
+        const blocks = renderMarkdownBlocks(segment, `seg-${index}`);
+        if (blocks.length === 0) return null;
+        return (
+          <div key={`seg-${index}`} className="space-y-2.5">
+            {blocks}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function SeverityIndicator({
@@ -269,7 +523,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const tabScreenshotRef = useRef<HTMLButtonElement | null>(null);
   const tabChatRef = useRef<HTMLButtonElement | null>(null);
-  const chatInputRef = useRef<HTMLInputElement | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
   const copyPromptTimerRef = useRef<number | null>(null);
   const copyAllTimerRef = useRef<number | null>(null);
   const copyMsgTimerRef = useRef<number | null>(null);
@@ -557,6 +811,22 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
     e.preventDefault();
     void sendChatMessage(chatInput);
   }
+
+  function handleChatKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      if (!chatSending && chatInput.trim()) {
+        void sendChatMessage(chatInput);
+      }
+    }
+  }
+
+  useEffect(() => {
+    const el = chatInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
+  }, [chatInput, activeTab]);
 
   function handleResetChat() {
     setChatError(null);
@@ -1051,32 +1321,42 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
             className="mt-10 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col"
           >
             {/* Chat utility header */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-[#F8FAFC] dark:bg-[#0D1321]">
+            <div className="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-[#F8FAFC] dark:bg-[#0D1321]">
               <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="font-display font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                  {t.studio.advisorTitle}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="w-7 h-7 rounded-lg bg-[#1E40AF]/10 dark:bg-[#3B82F6]/15 text-[#1E40AF] dark:text-[#60A5FA] inline-flex items-center justify-center shrink-0"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                  </span>
+                  <span className="font-display font-semibold text-slate-900 dark:text-[#F8FAFC]">
+                    {t.studio.advisorTitle}
+                  </span>
+                </div>
                 <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                   ·
                 </span>
-                <label
-                  htmlFor="chat-builder-select"
-                  className="text-xs text-slate-600 dark:text-slate-400"
-                >
-                  {t.studio.stackContext}
-                </label>
-                <select
-                  id="chat-builder-select"
-                  value={builderTool}
-                  onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
-                  className="px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-[#090D16] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] cursor-pointer"
-                >
-                  {BUILDERS.map((tool) => (
-                    <option key={tool} value={tool}>
-                      {formatBuilderLabel(tool, locale)}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="chat-builder-select"
+                    className="text-xs text-slate-600 dark:text-slate-400"
+                  >
+                    {t.studio.stackContext}
+                  </label>
+                  <select
+                    id="chat-builder-select"
+                    value={builderTool}
+                    onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
+                    className="px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-[#090D16] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] cursor-pointer"
+                  >
+                    {BUILDERS.map((tool) => (
+                      <option key={tool} value={tool}>
+                        {formatBuilderLabel(tool, locale)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center gap-4">
@@ -1102,7 +1382,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
 
             {/* Scrollable conversation thread */}
             <div
-              className="max-h-[440px] min-h-[300px] overflow-y-auto px-6 py-6 space-y-6 bg-white dark:bg-[#111827]"
+              className="max-h-[480px] min-h-[320px] overflow-y-auto px-5 sm:px-6 py-6 space-y-6 bg-white dark:bg-[#111827]"
               aria-live="polite"
             >
               {messages.map((msg) => {
@@ -1113,6 +1393,14 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                     className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                   >
                     <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1.5">
+                      {!isUser && (
+                        <span
+                          aria-hidden="true"
+                          className="w-5 h-5 rounded-md bg-[#1E40AF]/10 dark:bg-[#3B82F6]/15 text-[#1E40AF] dark:text-[#60A5FA] inline-flex items-center justify-center"
+                        >
+                          <ShieldCheck className="w-3 h-3" />
+                        </span>
+                      )}
                       <span className="font-medium text-slate-700 dark:text-slate-300">
                         {isUser ? t.studio.you : t.studio.advisorName}
                       </span>
@@ -1120,19 +1408,32 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                         ·
                       </span>
                       <span className="tabular-nums">{msg.timestamp}</span>
+                      {isUser && (
+                        <span
+                          aria-hidden="true"
+                          className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 inline-flex items-center justify-center"
+                        >
+                          <User className="w-3 h-3" />
+                        </span>
+                      )}
                     </div>
 
                     <div
-                      className={`max-w-2xl rounded-xl px-4 py-3.5 ${
+                      className={`rounded-xl px-4 py-3.5 ${
                         isUser
-                          ? 'bg-[#1E40AF] dark:bg-[#2563EB] text-white'
-                          : 'bg-[#F8FAFC] dark:bg-[#161F33] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
+                          ? 'max-w-[85%] sm:max-w-xl bg-[#1E40AF] dark:bg-[#2563EB] text-white'
+                          : 'max-w-[92%] sm:max-w-2xl bg-[#F8FAFC] dark:bg-[#161F33] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
                       }`}
                     >
                       {isUser ? (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                       ) : (
-                        <div>{renderMessageLines(msg.text)}</div>
+                        renderMessageLines(msg.text, {
+                          copyLabel: t.studio.copySnippet,
+                          copiedLabel: t.studio.copiedSnippet,
+                          defaultLabel: t.studio.codeBlockLabel,
+                          onCopied: () => setStatusAnnouncement(t.studio.copiedSnippet),
+                        })
                       )}
                     </div>
 
@@ -1145,13 +1446,14 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                           }
                           void handleCopyText(msg.text, () => {
                             setCopiedMsgId(msg.id);
+                            setStatusAnnouncement(t.studio.copiedResponse);
                             copyMsgTimerRef.current = window.setTimeout(
                               () => setCopiedMsgId(null),
                               2000
                             );
                           });
                         }}
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer py-1 px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
                         {copiedMsgId === msg.id ? (
                           <>
@@ -1175,11 +1477,30 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
 
               {chatSending && (
                 <div className="flex flex-col items-start">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    {t.studio.advisorName}
-                  </span>
-                  <div className="bg-[#F8FAFC] dark:bg-[#161F33] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                    {t.studio.preparingChecks}
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="w-5 h-5 rounded-md bg-[#1E40AF]/10 dark:bg-[#3B82F6]/15 text-[#1E40AF] dark:text-[#60A5FA] inline-flex items-center justify-center"
+                    >
+                      <ShieldCheck className="w-3 h-3" />
+                    </span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {t.studio.advisorName}
+                    </span>
+                  </div>
+                  <div className="bg-[#F8FAFC] dark:bg-[#161F33] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-600 dark:text-slate-300 inline-flex items-center gap-3">
+                    <span aria-hidden="true" className="inline-flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1E40AF] dark:bg-[#60A5FA] motion-safe:animate-pulse" />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-[#1E40AF] dark:bg-[#60A5FA] motion-safe:animate-pulse"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-[#1E40AF] dark:bg-[#60A5FA] motion-safe:animate-pulse"
+                        style={{ animationDelay: '300ms' }}
+                      />
+                    </span>
+                    <span>{t.studio.preparingChecks}</span>
                   </div>
                 </div>
               )}
@@ -1189,7 +1510,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
 
             {/* Starter quick-prompts when conversation is fresh */}
             {messages.length <= 1 && (
-              <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-[#F8FAFC]/60 dark:bg-[#0D1321]/70 flex flex-wrap gap-2">
+              <div className="px-5 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-[#F8FAFC]/60 dark:bg-[#0D1321]/70 flex flex-wrap gap-2">
                 {t.studio.starterPrompts.map((prompt) => (
                   <button
                     key={prompt}
@@ -1204,7 +1525,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
               </div>
             )}
 
-            {/* Chat error + input bar */}
+            {/* Chat error + multiline composer */}
             <div className="p-4 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#0D1321]">
               {chatError && (
                 <div
@@ -1228,32 +1549,38 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                 </div>
               )}
 
-              <form onSubmit={handleChatSubmit} className="flex items-center gap-2.5">
-                <label htmlFor="advisor-chat-input" className="sr-only">
-                  {t.studio.chatInputAria}
-                </label>
-                <input
-                  ref={chatInputRef}
-                  id="advisor-chat-input"
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`${t.studio.chatPlaceholderPrefix} ${formatBuilderLabel(
-                    builderTool,
-                    locale
-                  )}${t.studio.chatPlaceholderSuffix}`}
-                  maxLength={2000}
-                  disabled={chatSending}
-                  className="flex-1 min-w-0 px-4 py-2.5 min-h-[44px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
-                />
-                <button
-                  type="submit"
-                  disabled={chatSending || !chatInput.trim()}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
-                >
-                  <Send className="w-4 h-4" aria-hidden="true" />
-                  <span>{t.studio.send}</span>
-                </button>
+              <form onSubmit={handleChatSubmit} className="space-y-2">
+                <div className="flex items-end gap-2.5">
+                  <label htmlFor="advisor-chat-input" className="sr-only">
+                    {t.studio.chatInputAria}
+                  </label>
+                  <textarea
+                    ref={chatInputRef}
+                    id="advisor-chat-input"
+                    rows={1}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={handleChatKeyDown}
+                    placeholder={`${t.studio.chatPlaceholderPrefix} ${formatBuilderLabel(
+                      builderTool,
+                      locale
+                    )}${t.studio.chatPlaceholderSuffix}`}
+                    maxLength={2000}
+                    disabled={chatSending}
+                    className="flex-1 min-w-0 px-4 py-2.5 min-h-[44px] max-h-36 resize-none text-sm leading-relaxed bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 overflow-y-auto"
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatSending || !chatInput.trim()}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
+                  >
+                    <Send className="w-4 h-4" aria-hidden="true" />
+                    <span>{t.studio.send}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 px-0.5">
+                  {t.studio.enterToSendHint}
+                </p>
               </form>
             </div>
           </div>
