@@ -7,6 +7,11 @@ node_modules/
 /.vite/
 *.tsbuildinfo
 
+# Environment & secrets (keep example template)
+.env
+.env.local
+.env.*.local
+
 # Logs
 logs
 *.log

@@ -129,24 +129,16 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-export async function analyzeScreenshotLocally(params: {
+async function analyzeScreenshotFallback(params: {
   imageDataUrl: string;
   builderTool: BuilderTool;
   focusNote: string;
   isDemoScreenshot: boolean;
   locale: Locale;
 }): Promise<ScreenshotAnalysisResult> {
-  const { locale, builderTool, focusNote, isDemoScreenshot, imageDataUrl } = params;
+  const { locale, builderTool, focusNote, isDemoScreenshot } = params;
 
-  if (!imageDataUrl.startsWith('data:image/')) {
-    throw new Error(
-      locale === 'fr'
-        ? 'Veuillez importer une capture PNG, JPEG ou WebP valide.'
-        : 'Please upload a valid PNG, JPEG, or WebP screenshot.'
-    );
-  }
-
-  await wait(550);
+  await wait(450);
 
   const builderName = builderTool === 'Other' && locale === 'fr' ? 'votre outil' : builderTool;
 
@@ -225,7 +217,7 @@ export async function analyzeScreenshotLocally(params: {
     return {
       checkedArea: `Écran ${builderName}`,
       readinessStatus: 'Needs Fixes',
-      summary: `${focusSummary}Inspection interactive terminée pour votre écran ${builderName}. Vérifiez les frontières d’authentification, la gestion d’erreur et les cibles tactiles mobiles ci-dessous avant la mise en ligne.`,
+      summary: `${focusSummary}Inspection de repli effectuée pour votre écran ${builderName}. Vérifiez les frontières d’authentification, la gestion d’erreur et les cibles tactiles mobiles ci-dessous avant la mise en ligne.`,
       findings: [
         {
           severity: 'Warning',
@@ -256,11 +248,10 @@ export async function analyzeScreenshotLocally(params: {
   }
 
   const focusSummary = focusNote.trim() ? `Focused on "${focusNote.trim()}". ` : '';
-
   return {
     checkedArea: `${builderName} App Screen`,
     readinessStatus: 'Needs Fixes',
-    summary: `${focusSummary}Interactive preview inspection completed for your ${builderName} screen. Review the authentication boundary, error-state handling, and mobile tap spacing checks below before launching.`,
+    summary: `${focusSummary}Fallback inspection completed for your ${builderName} screen. Review the authentication boundary, error-state handling, and mobile tap spacing checks below before launching.`,
     findings: [
       {
         severity: 'Warning',
@@ -290,22 +281,15 @@ export async function analyzeScreenshotLocally(params: {
   };
 }
 
-export async function askQAAdvisor(params: {
+async function askQAAdvisorFallback(params: {
   messages: Array<{ role: 'user' | 'model'; text: string }>;
   builderContext: BuilderTool;
   locale: Locale;
 }): Promise<string> {
   const { locale, builderContext, messages } = params;
   const latest = messages[messages.length - 1]?.text.trim() ?? '';
-  if (!latest) {
-    throw new Error(
-      locale === 'fr'
-        ? 'Veuillez saisir un message pour démarrer ou poursuivre l’échange.'
-        : 'Please enter a message to start or continue the conversation.'
-    );
-  }
 
-  await wait(450);
+  await wait(400);
 
   const lower = latest.toLowerCase();
   const builder = builderContext === 'Other' && locale === 'fr' ? 'votre outil' : builderContext;
@@ -391,4 +375,104 @@ export async function askQAAdvisor(params: {
     `Paste this prompt into **${builder}** to harden the screen:`,
     `\`\`\`text\nAudit this ${builder} screen for exposed server secrets, missing authentication checks, broken mobile layouts at 390px, and missing inline loading/error recovery states.\n\`\`\``,
   ].join('\n');
+}
+
+export async function analyzeScreenshotLocally(params: {
+  imageDataUrl: string;
+  builderTool: BuilderTool;
+  focusNote: string;
+  isDemoScreenshot: boolean;
+  locale: Locale;
+}): Promise<ScreenshotAnalysisResult> {
+  if (!params.imageDataUrl.startsWith('data:image/')) {
+    throw new Error(
+      params.locale === 'fr'
+        ? 'Veuillez importer une capture PNG, JPEG ou WebP valide.'
+        : 'Please upload a valid PNG, JPEG, or WebP screenshot.'
+    );
+  }
+
+  try {
+    const response = await fetch('/api/analyze-screenshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageDataUrl: params.imageDataUrl,
+        builderTool: params.builderTool,
+        focusNote: params.focusNote,
+        locale: params.locale,
+      }),
+    });
+
+    if (response.ok) {
+      return (await response.json()) as ScreenshotAnalysisResult;
+    }
+
+    // Fall back to local simulation when hosted statically (404) or when API key is not configured (503)
+    if (response.status === 404 || response.status === 503) {
+      return analyzeScreenshotFallback(params);
+    }
+
+    const errData = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(
+      errData?.error ||
+        (params.locale === 'fr'
+          ? 'Impossible de finaliser l’audit de la capture.'
+          : 'Could not complete the screenshot audit.')
+    );
+  } catch (err) {
+    if (err instanceof TypeError) {
+      return analyzeScreenshotFallback(params);
+    }
+    throw err;
+  }
+}
+
+export async function askQAAdvisor(params: {
+  messages: Array<{ role: 'user' | 'model'; text: string }>;
+  builderContext: BuilderTool;
+  locale: Locale;
+}): Promise<string> {
+  const latest = params.messages[params.messages.length - 1]?.text.trim() ?? '';
+  if (!latest) {
+    throw new Error(
+      params.locale === 'fr'
+        ? 'Veuillez saisir un message pour démarrer ou poursuivre l’échange.'
+        : 'Please enter a message to start or continue the conversation.'
+    );
+  }
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: params.messages,
+        builderContext: params.builderContext,
+        locale: params.locale,
+      }),
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as { reply?: string };
+      if (data.reply) return data.reply;
+    }
+
+    if (response.status === 404 || response.status === 503) {
+      return askQAAdvisorFallback(params);
+    }
+
+    const errData = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(
+      errData?.error ||
+        (params.locale === 'fr'
+          ? 'Impossible de joindre le conseiller QA pour le moment.'
+          : 'Could not reach the QA advisor right now.')
+    );
+  } catch (err) {
+    if (err instanceof TypeError) {
+      return askQAAdvisorFallback(params);
+    }
+    throw err;
+  }
 }
