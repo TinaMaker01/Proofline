@@ -1,5 +1,13 @@
 export type BuilderTool = 'Lovable' | 'Bolt' | 'Cursor' | 'Replit' | 'v0' | 'Other';
 
+export type DatabaseTool = 'Supabase' | 'Firebase' | 'Other' | 'Unknown';
+
+export type UserScale = '0' | '1-50' | '51-500' | '500+';
+
+export type PricingPlanId = 'one-time' | 'monthly' | 'agency';
+
+export type MonthlyBudget = '<20' | '20-49' | '50-99' | '100+';
+
 export type FindingSeverity = 'Critical' | 'Warning' | 'Suggestion';
 
 export type FindingCategory =
@@ -30,21 +38,58 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export interface WaitlistPayload {
-  email: string;
-  builderTool: BuilderTool;
-  appUrl?: string;
-  painPoint?: string;
-  source: 'hero' | 'waitlist-section';
+export interface UtmParams {
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  referrer?: string;
 }
 
-export interface WaitlistResponse {
+export interface LeadStep1Payload extends UtmParams {
+  email: string;
+  consentGdpr: boolean;
+  source: 'hero' | 'final-cta';
+  locale: 'fr' | 'en';
+  companyWebsite?: string; // honeypot
+}
+
+export interface LeadStep2Payload {
+  email: string;
+  builderTool?: BuilderTool;
+  databaseTool?: DatabaseTool;
+  userScale?: UserScale;
+  painPoint?: string;
+  interestedPlan?: PricingPlanId;
+  monthlyBudget?: MonthlyBudget;
+  appUrl?: string;
+  ownsAppConfirmed?: boolean;
+  interviewOptIn?: boolean;
+  locale: 'fr' | 'en';
+}
+
+export interface LeadRecord {
+  email: string;
+  consentGdpr: boolean;
+  createdAt: string;
+  builderTool?: BuilderTool;
+  databaseTool?: DatabaseTool;
+  userScale?: UserScale;
+  painPoint?: string;
+  interestedPlan?: PricingPlanId;
+  monthlyBudget?: MonthlyBudget;
+  appUrl?: string;
+  ownsAppConfirmed?: boolean;
+  interviewOptIn?: boolean;
+  step2Completed?: boolean;
+}
+
+export interface LeadStep1Response {
   ok: boolean;
   alreadyRegistered: boolean;
-  entry: {
-    email: string;
-    builderTool: BuilderTool;
-    createdAt: string;
-  };
+  welcomeEmailSent: boolean;
+  persistenceMode: 'remote' | 'local';
+  entry: LeadRecord;
   totalCount: number;
 }

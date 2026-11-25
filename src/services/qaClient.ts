@@ -1,38 +1,53 @@
 import type { Locale } from '../i18n/translations';
 import type {
   BuilderTool,
+  LeadRecord,
+  LeadStep1Payload,
+  LeadStep1Response,
+  LeadStep2Payload,
+  PricingPlanId,
   ScreenshotAnalysisResult,
-  WaitlistPayload,
-  WaitlistResponse,
+  UtmParams,
 } from '../types/qa';
 
-const WAITLIST_STORAGE_KEY = 'proofline-waitlist-entries';
+const LEADS_STORAGE_KEY = 'proofline-leads-v2';
+const EVENTS_STORAGE_KEY = 'proofline-events-v2';
 
-interface StoredWaitlistEntry {
-  email: string;
-  builderTool: BuilderTool;
-  appUrl: string | null;
-  painPoint: string | null;
-  source: 'hero' | 'waitlist-section';
+interface StoredEvent {
+  eventType: string;
+  planId?: PricingPlanId;
+  email?: string;
+  utm?: UtmParams;
   createdAt: string;
 }
 
-function readStoredWaitlist(): StoredWaitlistEntry[] {
+function readStoredLeads(): LeadRecord[] {
   try {
-    const raw = window.localStorage.getItem(WAITLIST_STORAGE_KEY);
+    const raw = window.localStorage.getItem(LEADS_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as StoredWaitlistEntry[]) : [];
+    return Array.isArray(parsed) ? (parsed as LeadRecord[]) : [];
   } catch {
     return [];
   }
 }
 
-function writeStoredWaitlist(entries: StoredWaitlistEntry[]): void {
+function writeStoredLeads(leads: LeadRecord[]): void {
   try {
-    window.localStorage.setItem(WAITLIST_STORAGE_KEY, JSON.stringify(entries));
+    window.localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
   } catch {
     // Ignore storage quota or privacy-mode restrictions
+  }
+}
+
+function appendStoredEvent(event: StoredEvent): void {
+  try {
+    const raw = window.localStorage.getItem(EVENTS_STORAGE_KEY);
+    const existing = raw ? (JSON.parse(raw) as StoredEvent[]) : [];
+    const next = Array.isArray(existing) ? [...existing, event] : [event];
+    window.localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(next.slice(-100)));
+  } catch {
+    // Ignore storage quota restrictions
   }
 }
 
@@ -52,77 +67,235 @@ export function normalizeOptionalHttpUrl(rawUrl?: string): string | null {
   }
 }
 
-export function getWaitlistStats(): number {
-  return readStoredWaitlist().length;
+export async function fetchLeadCount(): Promise<number> {
+  const localCount = readStoredLeads().length;
+  try {
+    const res = await fetch('/api/leads');
+    if (res.ok) {
+      const data = (await res.json()) as { configured?: boolean; totalCount?: number | null };
+      if (data.configured && typeof data.totalCount === 'number') {
+        return data.totalCount;
+      }
+    }
+  } catch {
+    // Fallback to local count
+  }
+  return localCount;
 }
 
-export async function submitWaitlist(
-  payload: WaitlistPayload,
-  locale: Locale = 'fr'
-): Promise<WaitlistResponse> {
+export function getSavedActiveLead(): LeadRecord | null {
+  const leads = readStoredLeads();
+  return leads.length > 0 ? leads[leads.length - 1] : null;
+}
+
+export async function submitLeadStep1(payload: LeadStep1Payload): Promise<LeadStep1Response> {
   const normalizedEmail = payload.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
     throw new Error(
-      locale === 'fr'
+      payload.locale === 'fr'
         ? 'Veuillez saisir une adresse e-mail valide.'
-        : 'Please enter a valid work or personal email address.'
+        : 'Please enter a valid email address.'
+    );
+  }
+  if (!payload.consentGdpr) {
+    throw new Error(
+      payload.locale === 'fr'
+        ? 'Veuillez accepter la politique de confidentialité pour vous inscrire.'
+        : 'Please accept the privacy policy to register.'
     );
   }
 
-  let appUrl: string | null = null;
-  if (payload.appUrl && payload.appUrl.trim().length > 0) {
-    appUrl = normalizeOptionalHttpUrl(payload.appUrl);
-    if (!appUrl) {
+  // Always save locally for instant Step 2 continuity across refresh
+  const localLeads = readStoredLeads();
+  const existingIdx = localLeads.findIndex((item) => item.email === normalizedEmail);
+  const localRecord: LeadRecord =
+    existingIdx >= 0
+      ? localLeads[existingIdx]
+      : {
+          email: normalizedEmail,
+          consentGdpr: true,
+          createdAt: new Date().toISOString(),
+        };
+
+  if (existingIdx < 0) {
+    writeStoredLeads([...localLeads, localRecord]);
+  }
+
+  try {
+    const res = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'step1', ...payload, email: normalizedEmail }),
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as {
+        alreadyRegistered?: boolean;
+        welcomeEmailSent?: boolean;
+        entry?: { email: string; createdAt: string };
+        totalCount?: number;
+      };
+      return {
+        ok: true,
+        alreadyRegistered: Boolean(data.alreadyRegistered),
+        welcomeEmailSent: Boolean(data.welcomeEmailSent),
+        persistenceMode: 'remote',
+        entry: {
+          ...localRecord,
+          email: data.entry?.email || localRecord.email,
+          createdAt: data.entry?.createdAt || localRecord.createdAt,
+        },
+        totalCount: data.totalCount ?? readStoredLeads().length,
+      };
+    }
+
+    if (res.status !== 404 && res.status !== 503) {
+      const errData = (await res.json().catch(() => null)) as { error?: string } | null;
       throw new Error(
-        locale === 'fr'
-          ? 'Veuillez saisir une URL http ou https valide (par exemple monapp.lovable.app).'
-          : 'Please enter a valid http or https URL (for example, myapp.lovable.app).'
+        errData?.error ||
+          (payload.locale === 'fr'
+            ? 'Impossible d’enregistrer ton inscription pour le moment.'
+            : 'Could not save your signup right now.')
       );
+    }
+  } catch (err) {
+    if (!(err instanceof TypeError)) {
+      throw err;
     }
   }
 
-  const entries = readStoredWaitlist();
-  const existing = entries.find((entry) => entry.email === normalizedEmail);
-  if (existing) {
-    if (appUrl && !existing.appUrl) existing.appUrl = appUrl;
-    if (payload.painPoint && !existing.painPoint) existing.painPoint = payload.painPoint;
-    if (payload.builderTool !== 'Other') existing.builderTool = payload.builderTool;
-    writeStoredWaitlist(entries);
-
-    return {
-      ok: true,
-      alreadyRegistered: true,
-      entry: {
-        email: existing.email,
-        builderTool: existing.builderTool,
-        createdAt: existing.createdAt,
-      },
-      totalCount: entries.length,
-    };
-  }
-
-  const created: StoredWaitlistEntry = {
-    email: normalizedEmail,
-    builderTool: payload.builderTool,
-    appUrl,
-    painPoint: payload.painPoint?.trim().slice(0, 240) || null,
-    source: payload.source,
-    createdAt: new Date().toISOString(),
-  };
-
-  const next = [...entries, created];
-  writeStoredWaitlist(next);
-
   return {
     ok: true,
-    alreadyRegistered: false,
-    entry: {
-      email: created.email,
-      builderTool: created.builderTool,
-      createdAt: created.createdAt,
-    },
-    totalCount: next.length,
+    alreadyRegistered: existingIdx >= 0,
+    welcomeEmailSent: false,
+    persistenceMode: 'local',
+    entry: localRecord,
+    totalCount: readStoredLeads().length,
   };
+}
+
+export async function submitLeadStep2(
+  payload: LeadStep2Payload
+): Promise<{ persistenceMode: 'remote' | 'local'; updatedLead: LeadRecord }> {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const trimmedUrl = payload.appUrl?.trim() || '';
+
+  let normalizedUrl: string | undefined;
+  if (trimmedUrl) {
+    const parsed = normalizeOptionalHttpUrl(trimmedUrl);
+    if (!parsed) {
+      throw new Error(
+        payload.locale === 'fr'
+          ? 'Saisis une URL http ou https valide (par exemple monapp.lovable.app).'
+          : 'Enter a valid http or https URL (for example, myapp.lovable.app).'
+      );
+    }
+    if (!payload.ownsAppConfirmed) {
+      throw new Error(
+        payload.locale === 'fr'
+          ? 'Coche la case certifiant que tu es propriétaire de cette application pour demander un audit.'
+          : 'Please confirm that you own this application before requesting an audit.'
+      );
+    }
+    normalizedUrl = parsed;
+  }
+
+  const localLeads = readStoredLeads();
+  const existingIdx = localLeads.findIndex((item) => item.email === normalizedEmail);
+  const baseLead: LeadRecord =
+    existingIdx >= 0
+      ? localLeads[existingIdx]
+      : {
+          email: normalizedEmail,
+          consentGdpr: true,
+          createdAt: new Date().toISOString(),
+        };
+
+  const updatedLead: LeadRecord = {
+    ...baseLead,
+    builderTool: payload.builderTool ?? baseLead.builderTool,
+    databaseTool: payload.databaseTool ?? baseLead.databaseTool,
+    userScale: payload.userScale ?? baseLead.userScale,
+    painPoint: payload.painPoint ?? baseLead.painPoint,
+    interestedPlan: payload.interestedPlan ?? baseLead.interestedPlan,
+    monthlyBudget: payload.monthlyBudget ?? baseLead.monthlyBudget,
+    appUrl: normalizedUrl ?? baseLead.appUrl,
+    ownsAppConfirmed: Boolean(normalizedUrl && payload.ownsAppConfirmed),
+    interviewOptIn: Boolean(payload.interviewOptIn),
+    step2Completed: true,
+  };
+
+  if (existingIdx >= 0) {
+    localLeads[existingIdx] = updatedLead;
+    writeStoredLeads(localLeads);
+  } else {
+    writeStoredLeads([...localLeads, updatedLead]);
+  }
+
+  try {
+    const res = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'step2',
+        ...payload,
+        email: normalizedEmail,
+        appUrl: normalizedUrl,
+      }),
+    });
+
+    if (res.ok) {
+      return { persistenceMode: 'remote', updatedLead };
+    }
+
+    if (res.status !== 404 && res.status !== 503) {
+      const errData = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(
+        errData?.error ||
+          (payload.locale === 'fr'
+            ? 'Impossible d’enregistrer tes réponses.'
+            : 'Could not save your answers.')
+      );
+    }
+  } catch (err) {
+    if (!(err instanceof TypeError)) {
+      throw err;
+    }
+  }
+
+  return { persistenceMode: 'local', updatedLead };
+}
+
+export async function trackPricingInterest(params: {
+  planId: PricingPlanId;
+  email?: string;
+  locale: Locale;
+  utm?: UtmParams;
+}): Promise<void> {
+  appendStoredEvent({
+    eventType: 'pricing_interest',
+    planId: params.planId,
+    email: params.email,
+    utm: params.utm,
+    createdAt: new Date().toISOString(),
+  });
+
+  try {
+    await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'event',
+        eventType: 'pricing_interest',
+        planId: params.planId,
+        email: params.email,
+        locale: params.locale,
+        ...params.utm,
+      }),
+    });
+  } catch {
+    // Non-blocking analytics event
+  }
 }
 
 function wait(ms: number): Promise<void> {
@@ -140,7 +313,7 @@ async function analyzeScreenshotFallback(params: {
 
   await wait(450);
 
-  const builderName = builderTool === 'Other' && locale === 'fr' ? 'votre outil' : builderTool;
+  const builderName = builderTool === 'Other' && locale === 'fr' ? 'ton outil' : builderTool;
 
   if (isDemoScreenshot) {
     if (locale === 'fr') {
@@ -148,15 +321,15 @@ async function analyzeScreenshotFallback(params: {
         checkedArea: 'Écran Paiement & Facturation',
         readinessStatus: 'High Risk',
         summary:
-          'Des clés secrètes côté client et un accès non authentifié à la base de données sont exposés directement sur cet écran de paiement, avec un bouton mobile cassé. Sécurisez les clés Stripe et Supabase côté serveur avant de partager ce lien.',
+          'Des clés secrètes côté client et un accès non authentifié à la base de données sont exposés directement sur cet écran de paiement, avec un bouton mobile cassé. Sécurise les clés Stripe et Supabase côté serveur avant de partager ce lien.',
         findings: [
           {
             severity: 'Critical',
             category: 'Security',
             title: 'Clés secrètes et panneau debug exposés dans l’interface client',
             detail:
-              'STRIPE_SECRET et SUPABASE_SERVICE_ROLE_KEY apparaissent dans le runtime navigateur et le panneau de debug à droite, exposant votre compte à tout visiteur.',
-            fixPrompt: `Supprimez le panneau DEBUG ENV des builds de production dans ${builderName}, révoquez vos clés Stripe secrète et Supabase service_role, et déplacez tous les appels sensibles dans des routes API serveur.`,
+              'STRIPE_SECRET et SUPABASE_SERVICE_ROLE_KEY apparaissent dans le navigateur et le panneau de debug à droite, exposant ton compte à tout visiteur.',
+            fixPrompt: `Supprime le panneau DEBUG ENV des builds de production dans ${builderName}, révoque tes clés Stripe secrète et Supabase service_role, et déplace tous les appels sensibles dans des routes API serveur.`,
           },
           {
             severity: 'Critical',
@@ -164,7 +337,7 @@ async function analyzeScreenshotFallback(params: {
             title: 'La table users renvoie 1 482 lignes sans authentification',
             detail:
               'La capture montre RLS_ENABLED=false et une requête non authentifiée renvoyant les lignes utilisateurs directement au client.',
-            fixPrompt: `Activez Row Level Security (RLS) sur la table public.users et ajoutez une règle limitant la lecture et la modification aux utilisateurs authentifiés où auth.uid() = id.`,
+            fixPrompt: `Active Row Level Security (RLS) sur la table public.users et ajoute une règle limitant la lecture et la modification aux utilisateurs authentifiés où auth.uid() = id.`,
           },
           {
             severity: 'Warning',
@@ -172,7 +345,7 @@ async function analyzeScreenshotFallback(params: {
             title: 'Le bouton principal Payer chevauche et déborde de la carte',
             detail:
               'Le bouton « Pay $49.00 Now » entre en collision avec « Cancel subscription » et sort du conteneur, tandis que le libellé secondaire manque de contraste.',
-            fixPrompt: `Placez les deux boutons dans un conteneur flex responsive avec gap-3 et w-full sm:w-auto, et foncez la couleur du texte secondaire en slate-700 pour un contraste lisible.`,
+            fixPrompt: `Place les deux boutons dans un conteneur flex responsive avec gap-3 et w-full sm:w-auto, et fonce la couleur du texte secondaire en slate-700 pour un contraste lisible.`,
           },
         ],
       };
@@ -217,7 +390,7 @@ async function analyzeScreenshotFallback(params: {
     return {
       checkedArea: `Écran ${builderName}`,
       readinessStatus: 'Needs Fixes',
-      summary: `${focusSummary}Inspection de repli effectuée pour votre écran ${builderName}. Vérifiez les frontières d’authentification, la gestion d’erreur et les cibles tactiles mobiles ci-dessous avant la mise en ligne.`,
+      summary: `${focusSummary}Inspection de repli effectuée pour ton écran ${builderName}. Vérifie les frontières d’authentification, la gestion d’erreur et les cibles tactiles mobiles ci-dessous avant la mise en ligne.`,
       findings: [
         {
           severity: 'Warning',
@@ -225,7 +398,7 @@ async function analyzeScreenshotFallback(params: {
           title: 'Vérifier qu’aucune clé API privée ne transite côté client',
           detail:
             'Les frontends générés par IA incluent parfois des clés secrètes ou des requêtes non protégées directement dans les composants navigateurs.',
-          fixPrompt: `Auditez tous les composants clients de cet écran ${builderName} pour ne conserver que la clé publique anon et déplacer les appels sensibles dans une route serveur.`,
+          fixPrompt: `Audite tous les composants clients de cet écran ${builderName} pour ne conserver que la clé publique anon et déplacer les appels sensibles dans une route serveur.`,
         },
         {
           severity: 'Warning',
@@ -233,15 +406,15 @@ async function analyzeScreenshotFallback(params: {
           title: 'Ajouter des états explicites de chargement, vide et reprise sur erreur',
           detail:
             'Les formulaires et actions principales doivent désactiver l’envoi en cours et afficher un message clair pour éviter de bloquer l’utilisateur en cas d’échec réseau.',
-          fixPrompt: `Ajoutez un état de chargement, une protection anti-double-clic et un message d’erreur inline role="alert" avec option de reprise sur cet écran ${builderName}.`,
+          fixPrompt: `Ajoute un état de chargement, une protection anti-double-clic et un message d’erreur inline role="alert" avec option de reprise sur cet écran ${builderName}.`,
         },
         {
           severity: 'Suggestion',
           category: 'Accessibility',
           title: 'Contrôler les zones tactiles de 44 px et les anneaux de focus clavier',
           detail:
-            'Assurez-vous que les boutons, sélecteurs et liens gardent un espacement confortable à 390 px de large et un contour focus-visible contrasté.',
-          fixPrompt: `Passez les éléments interactifs de cet écran à min-h-[44px] sur mobile, reliez chaque champ à un <label> explicite et ajoutez focus-visible.`,
+            'Assure-toi que les boutons, sélecteurs et liens gardent un espacement confortable à 390 px de large et un contour focus-visible contrasté.',
+          fixPrompt: `Passe les éléments interactifs de cet écran à min-h-[44px] sur mobile, relie chaque champ à un <label> explicite et ajoute focus-visible.`,
         },
       ],
     };
@@ -292,15 +465,21 @@ async function askQAAdvisorFallback(params: {
   await wait(400);
 
   const lower = latest.toLowerCase();
-  const builder = builderContext === 'Other' && locale === 'fr' ? 'votre outil' : builderContext;
+  const builder = builderContext === 'Other' && locale === 'fr' ? 'ton outil' : builderContext;
 
-  if (lower.includes('supabase') || lower.includes('rls') || lower.includes('key') || lower.includes('clé') || lower.includes('table')) {
+  if (
+    lower.includes('supabase') ||
+    lower.includes('rls') ||
+    lower.includes('key') ||
+    lower.includes('clé') ||
+    lower.includes('table')
+  ) {
     if (locale === 'fr') {
       return [
         `Voici la méthode la plus rapide pour vérifier l’exposition Supabase dans une app **${builder}** :`,
-        '- Ouvrez DevTools → Réseau et filtrez par `rest/v1/` tout en étant déconnecté. Si une table renvoie `200 OK` avec des lignes, le Row Level Security (RLS) est absent ou trop permissif.',
-        '- Recherchez `service_role` ou `eyJ` dans votre bundle frontend : seule la clé publique `anon` doit exister dans le navigateur.',
-        `Collez ce prompt dans **${builder}** pour verrouiller vos tables :`,
+        '- Ouvre DevTools → Réseau et filtre par `rest/v1/` tout en étant déconnecté. Si une table renvoie `200 OK` avec des lignes, le Row Level Security (RLS) est absent ou trop permissif.',
+        '- Recherche `service_role` ou `eyJ` dans ton bundle frontend : seule la clé publique `anon` doit exister dans le navigateur.',
+        `Colle ce prompt dans **${builder}** pour verrouiller tes tables :`,
         '```text\nActive Row Level Security (RLS) sur toutes les tables publiques Supabase, retire toute référence à SUPABASE_SERVICE_ROLE_KEY du code client, et ajoute des politiques limitant la lecture et l’écriture à auth.uid() = user_id.\n```',
       ].join('\n');
     }
@@ -314,14 +493,19 @@ async function askQAAdvisorFallback(params: {
     ].join('\n');
   }
 
-  if (lower.includes('stripe') || lower.includes('checkout') || lower.includes('payment') || lower.includes('paiement')) {
+  if (
+    lower.includes('stripe') ||
+    lower.includes('checkout') ||
+    lower.includes('payment') ||
+    lower.includes('paiement')
+  ) {
     if (locale === 'fr') {
       return [
-        `Avant d’encaisser de vrais paiements Stripe dans **${builder}**, validez ces 4 points critiques :`,
-        '1. **Prix calculés côté serveur** : ne faites jamais confiance aux montants envoyés par le navigateur.',
-        '2. **Vérification de signature webhook** : contrôlez `stripe-signature` avec `STRIPE_WEBHOOK_SECRET` avant d’activer un abonnement.',
-        '3. **Traitement idempotent** : ignorez les webhooks déjà traités afin d’éviter les doublons ou états bloqués.',
-        '4. **Test mobile à 390 px** : vérifiez que le bouton de paiement reste entièrement visible et cliquable sans chevauchement.',
+        `Avant d’encaisser de vrais paiements Stripe dans **${builder}**, valide ces 4 points critiques :`,
+        '1. **Prix calculés côté serveur** : ne fais jamais confiance aux montants envoyés par le navigateur.',
+        '2. **Vérification de signature webhook** : contrôle `stripe-signature` avec `STRIPE_WEBHOOK_SECRET` avant d’activer un abonnement.',
+        '3. **Traitement idempotent** : ignore les webhooks déjà traités afin d’éviter les doublons ou états bloqués.',
+        '4. **Test mobile à 390 px** : vérifie que le bouton de paiement reste entièrement visible et cliquable sans chevauchement.',
         '```text\nDéplace la création de session Stripe Checkout et la vérification de signature webhook dans des routes serveur dédiées, puis vérifie la modale de paiement à 390px avec gestion d’erreur inline.\n```',
       ].join('\n');
     }
@@ -336,13 +520,20 @@ async function askQAAdvisorFallback(params: {
     ].join('\n');
   }
 
-  if (lower.includes('domain') || lower.includes('domaine') || lower.includes('login') || lower.includes('connexion') || lower.includes('auth') || lower.includes('cors')) {
+  if (
+    lower.includes('domain') ||
+    lower.includes('domaine') ||
+    lower.includes('login') ||
+    lower.includes('connexion') ||
+    lower.includes('auth') ||
+    lower.includes('cors')
+  ) {
     if (locale === 'fr') {
       return [
         `Quand la connexion fonctionne en aperçu mais échoue sur un domaine personnalisé dans **${builder}**, il s’agit presque toujours d’une liste d’origines autorisées incomplète :`,
-        '- Ajoutez votre domaine `https://` personnalisé (et la variante `www` si utilisée) dans **Site URL** et **Redirect URLs** de votre fournisseur d’auth.',
-        '- Vérifiez les attributs `SameSite` et `Secure` des cookies si votre API tourne sur un sous-domaine distinct.',
-        '- Contrôlez la console navigateur pour détecter toute erreur CORS ou `redirect_uri_mismatch` lors du retour OAuth.',
+        '- Ajoute ton domaine `https://` personnalisé (et la variante `www` si utilisée) dans **Site URL** et **Redirect URLs** de ton fournisseur d’auth.',
+        '- Vérifie les attributs `SameSite` et `Secure` des cookies si ton API tourne sur un sous-domaine distinct.',
+        '- Contrôle la console navigateur pour détecter toute erreur CORS ou `redirect_uri_mismatch` lors du retour OAuth.',
         '```text\nMets à jour les URLs de redirection auth pour utiliser dynamiquement window.location.origin (ou le domaine personnalisé autorisé), configure CORS avec credentials pour l’origine de production et affiche un message d’erreur clair si l’échange de session échoue.\n```',
       ].join('\n');
     }
@@ -358,11 +549,11 @@ async function askQAAdvisorFallback(params: {
 
   if (locale === 'fr') {
     return [
-      `Pour votre application **${builder}**, commencez par ces 3 vérifications avant lancement :`,
-      '1. **Parcours critiques** : testez inscription, connexion, soumission de formulaire et rechargement en `1440px` et `390px`.',
-      '2. **Secrets & accès** : vérifiez qu’aucune clé privée (`sk_live`, `service_role`, secret webhook) n’apparaît dans le code client et que chaque route privée exige une session.',
-      '3. **Erreurs & états vides** : provoquez volontairement une erreur réseau pour vérifier que le formulaire conserve la saisie et propose une reprise claire.',
-      `Collez ce prompt dans **${builder}** pour renforcer l’écran :`,
+      `Pour ton application **${builder}**, commence par ces 3 vérifications avant lancement :`,
+      '1. **Parcours critiques** : teste inscription, connexion, soumission de formulaire et rechargement en `1440px` et `390px`.',
+      '2. **Secrets & accès** : vérifie qu’aucune clé privée (`sk_live`, `service_role`, secret webhook) n’apparaît dans le code client et que chaque route privée exige une session.',
+      '3. **Erreurs & états vides** : provoque volontairement une erreur réseau pour vérifier que le formulaire conserve la saisie et propose une reprise claire.',
+      `Colle ce prompt dans **${builder}** pour renforcer l’écran :`,
       `\`\`\`text\nAudite cet écran ${builder} pour supprimer toute clé serveur exposée, vérifier l’authentification sur les endpoints privés, corriger la mise en page mobile à 390px et ajouter des états de chargement et d’erreur inline.\n\`\`\``,
     ].join('\n');
   }
@@ -408,7 +599,6 @@ export async function analyzeScreenshotLocally(params: {
       return (await response.json()) as ScreenshotAnalysisResult;
     }
 
-    // Fall back to local simulation when hosted statically (404) or when API key is not configured (503)
     if (response.status === 404 || response.status === 503) {
       return analyzeScreenshotFallback(params);
     }

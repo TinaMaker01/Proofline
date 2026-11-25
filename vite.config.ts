@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { analyzeScreenshotWithGemini, chatWithGeminiAdvisor } from './server/geminiService.ts';
+import { handleLeadsGet, handleLeadsPost, type LeadsEnv } from './server/leadsService.ts';
 
 const MAX_JSON_BODY_BYTES = 12 * 1024 * 1024;
 
@@ -39,12 +40,35 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.end(JSON.stringify(payload));
 }
 
-function prooflineDevApiPlugin(apiKey?: string): Plugin {
+function prooflineDevApiPlugin(apiKey: string | undefined, leadsEnv: LeadsEnv): Plugin {
   return {
     name: 'proofline-dev-api',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url?.split('?')[0];
+
+        if (url === '/api/leads') {
+          if (req.method === 'GET') {
+            const result = await handleLeadsGet(leadsEnv);
+            sendJson(res, result.status, result.body);
+            return;
+          }
+          if (req.method === 'POST') {
+            let body: unknown;
+            try {
+              body = await readJsonRequest(req);
+            } catch {
+              sendJson(res, 400, { error: 'Invalid JSON request body' });
+              return;
+            }
+            const result = await handleLeadsPost(body, leadsEnv);
+            sendJson(res, result.status, result.body);
+            return;
+          }
+          sendJson(res, 405, { error: 'Method not allowed' });
+          return;
+        }
+
         if (url !== '/api/analyze-screenshot' && url !== '/api/chat') {
           next();
           return;
@@ -76,8 +100,15 @@ function prooflineDevApiPlugin(apiKey?: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const serverApiKey = env.GEMINI_API_KEY || env.AI_API_KEY;
+  const leadsEnv: LeadsEnv = {
+    supabaseUrl: env.SUPABASE_URL,
+    supabaseServiceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    resendApiKey: env.RESEND_API_KEY,
+    resendFromEmail: env.RESEND_FROM_EMAIL,
+    resendReplyTo: env.RESEND_REPLY_TO,
+  };
 
   return {
-    plugins: [react(), tailwindcss(), prooflineDevApiPlugin(serverApiKey)],
+    plugins: [react(), tailwindcss(), prooflineDevApiPlugin(serverApiKey, leadsEnv)],
   };
 });
