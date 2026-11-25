@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { BuilderTool, WaitlistResponse } from '../types/qa';
 import { WaitlistSuccessBurst } from './WaitlistSuccessBurst';
+import { submitWaitlist } from '../services/qaClient';
 
 interface HeroSectionProps {
   onWaitlistSuccess: (res: WaitlistResponse) => void;
@@ -60,24 +61,17 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmed,
-          builderTool,
-          source: 'hero',
-        }),
+      const data = await submitWaitlist({
+        email: trimmed,
+        builderTool,
+        source: 'hero',
       });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data?.error || 'Could not save your signup right now. Please try again.');
-        return;
-      }
-      setSubmitted(data as WaitlistResponse);
-      onWaitlistSuccess(data as WaitlistResponse);
-    } catch {
-      setError('Network error while saving your email. Please try again.');
+      setSubmitted(data);
+      onWaitlistSuccess(data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not save your signup right now. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }

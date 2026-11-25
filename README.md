@@ -10,17 +10,14 @@ Automated testing, security verification, and plain-English fixes for AI-generat
    ```bash
    npm install
    ```
-2. Copy `.env.example` to `.env.local` and set your API key:
-   ```bash
-   AI_API_KEY="your_api_key_here"
-   ```
-3. Start the development server:
+2. Start the Vite development server:
    ```bash
    npm run dev
    ```
 
 ## Scripts
 
-- `npm run dev` — Start the development server (`server.ts`)
-- `npm run build` — Build the production frontend bundle
+- `npm run dev` — Start the TypeScript + Vite development server
+- `npm run build` — Run TypeScript type-checking (`tsc --noEmit`) and build with Vite
+- `npm run preview` — Preview the production Vite build locally
 - `npm run lint` — Run TypeScript type-checking (`tsc --noEmit`)

@@ -8,6 +8,7 @@ import { WaitlistSection } from './components/WaitlistSection';
 import { Footer } from './components/Footer';
 import type { ThemeMode } from './components/ThemeToggle';
 import type { WaitlistResponse } from './types/qa';
+import { getWaitlistStats } from './services/qaClient';
 
 const THEME_STORAGE_KEY = 'proofline-theme';
 
@@ -54,16 +55,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    fetch('/api/waitlist/stats')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && typeof data.totalCount === 'number') {
-          setWaitlistCount(data.totalCount);
-        }
-      })
-      .catch(() => {
-        // Non-blocking optional stats check
-      });
+    setWaitlistCount(getWaitlistStats());
   }, []);
 
   function scrollToSection(id: string) {

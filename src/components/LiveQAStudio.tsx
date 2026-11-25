@@ -30,6 +30,7 @@ import type {
   ScreenshotAnalysisResult,
   ScreenshotFinding,
 } from '../types/qa';
+import { analyzeScreenshotLocally, askQAAdvisor } from '../services/qaClient';
 
 const BUILDERS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
@@ -413,29 +414,22 @@ export function LiveQAStudio() {
     setAnalyzing(true);
     setAnalysisError(null);
     try {
-      const response = await fetch('/api/analyze-screenshot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageDataUrl: previewDataUrl,
-          builderTool,
-          focusNote,
-        }),
+      const typed = await analyzeScreenshotLocally({
+        imageDataUrl: previewDataUrl,
+        builderTool,
+        focusNote,
+        isDemoScreenshot: fileName === 'demo-checkout-preview.png',
       });
-      const data = await response.json();
-      if (!response.ok) {
-        setAnalysisError(data?.error || 'Could not complete the screenshot audit.');
-        return;
-      }
-      const typed = data as ScreenshotAnalysisResult;
       setAnalysisResult(typed);
       setStatusAnnouncement(
         `Screenshot audit complete: ${typed.readinessStatus}, ${typed.findings.length} ${
           typed.findings.length === 1 ? 'finding' : 'findings'
         }.`
       );
-    } catch {
-      setAnalysisError('Network error while contacting the audit service. Please try again.');
+    } catch (err) {
+      setAnalysisError(
+        err instanceof Error ? err.message : 'Could not complete the screenshot audit.'
+      );
     } finally {
       setAnalyzing(false);
     }
@@ -503,35 +497,26 @@ export function LiveQAStudio() {
     setChatSending(true);
 
     try {
-      // Exclude the static welcome prompt from API conversation history so turns start cleanly with user
       const apiMessages = nextHistory
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({ role: m.role, text: m.text }));
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: apiMessages,
-          builderContext: builderTool,
-        }),
+      const reply = await askQAAdvisor({
+        messages: apiMessages,
+        builderContext: builderTool,
       });
-      const data = await response.json();
-      if (!response.ok) {
-        setChatError(data?.error || 'Could not reach the QA advisor right now.');
-        setFailedPrompt(trimmed);
-        return;
-      }
 
       const replyMsg: ChatMessage = {
         id: `model-${Date.now()}`,
         role: 'model',
-        text: data.reply,
+        text: reply,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, replyMsg]);
-    } catch {
-      setChatError('Network error while sending your message. Please try again.');
+    } catch (err) {
+      setChatError(
+        err instanceof Error ? err.message : 'Could not reach the QA advisor right now.'
+      );
       setFailedPrompt(trimmed);
     } finally {
       setChatSending(false);

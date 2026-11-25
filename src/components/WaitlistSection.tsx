@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import type { BuilderTool, WaitlistResponse } from '../types/qa';
 import { WaitlistSuccessBurst } from './WaitlistSuccessBurst';
+import { normalizeOptionalHttpUrl, submitWaitlist } from '../services/qaClient';
 
 interface WaitlistSectionProps {
   emailInputRef: RefObject<HTMLInputElement | null>;
@@ -23,15 +24,7 @@ const PAIN_POINTS = [
 function isValidOptionalUrl(rawUrl: string): boolean {
   const trimmed = rawUrl.trim();
   if (!trimmed) return true;
-  if (trimmed.length > 500) return false;
-  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-    return parsed.hostname.includes('.');
-  } catch {
-    return false;
-  }
+  return normalizeOptionalHttpUrl(trimmed) !== null;
 }
 
 export function WaitlistSection({
@@ -75,28 +68,22 @@ export function WaitlistSection({
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmedEmail,
-          builderTool,
-          appUrl: appUrl.trim() || undefined,
-          painPoint,
-          source: 'waitlist-section',
-        }),
+      const data = await submitWaitlist({
+        email: trimmedEmail,
+        builderTool,
+        appUrl: appUrl.trim() || undefined,
+        painPoint,
+        source: 'waitlist-section',
       });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data?.error || 'Could not complete signup. Please check your details.');
-        return;
-      }
-      const typed = data as WaitlistResponse;
-      setLocalResult(typed);
+      setLocalResult(data);
       setDismissedParent(false);
-      onWaitlistSuccess(typed);
-    } catch {
-      setError('Network error while submitting your request. Please try again.');
+      onWaitlistSuccess(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not complete signup. Please check your details.'
+      );
     } finally {
       setSubmitting(false);
     }
