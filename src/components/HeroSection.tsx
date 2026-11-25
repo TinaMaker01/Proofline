@@ -11,36 +11,23 @@ import {
 import type { BuilderTool, WaitlistResponse } from '../types/qa';
 import { WaitlistSuccessBurst } from './WaitlistSuccessBurst';
 import { submitWaitlist } from '../services/qaClient';
+import { formatBuilderLabel, type Locale, type SiteTranslations } from '../i18n/translations';
 
 interface HeroSectionProps {
+  locale: Locale;
+  t: SiteTranslations;
   onWaitlistSuccess: (res: WaitlistResponse) => void;
   onJumpToLiveAudit: () => void;
 }
 
 const BUILDER_OPTIONS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
-const SAMPLE_WORKBENCH_CHECKS = [
-  {
-    severity: 'Critical',
-    area: 'Secret Exposure',
-    message: 'STRIPE_SECRET bundled in client JS',
-    location: 'CheckoutForm.tsx:142',
-  },
-  {
-    severity: 'Critical',
-    area: 'Access Control',
-    message: 'public.users returns 1,482 rows without auth',
-    location: 'RLS_ENABLED=false',
-  },
-  {
-    severity: 'Warning',
-    area: 'Broken Flow · 390px',
-    message: 'Primary Pay button clips outside modal viewport',
-    location: 'mobile-checkout',
-  },
-] as const;
-
-export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectionProps) {
+export function HeroSection({
+  locale,
+  t,
+  onWaitlistSuccess,
+  onJumpToLiveAudit,
+}: HeroSectionProps) {
   const [email, setEmail] = useState('');
   const [builderTool, setBuilderTool] = useState<BuilderTool>('Lovable');
   const [submitting, setSubmitting] = useState(false);
@@ -54,24 +41,25 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
 
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
-      setError('Enter a valid email address so we can send your invite.');
+      setError(t.hero.emailError);
       emailRef.current?.focus();
       return;
     }
 
     setSubmitting(true);
     try {
-      const data = await submitWaitlist({
-        email: trimmed,
-        builderTool,
-        source: 'hero',
-      });
+      const data = await submitWaitlist(
+        {
+          email: trimmed,
+          builderTool,
+          source: 'hero',
+        },
+        locale
+      );
       setSubmitted(data);
       onWaitlistSuccess(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Could not save your signup right now. Please try again.'
-      );
+      setError(err instanceof Error ? err.message : t.hero.fallbackError);
     } finally {
       setSubmitting(false);
     }
@@ -89,13 +77,11 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                 textWrap: 'balance',
               }}
             >
-              Ship AI-built apps that never break or leak.
+              {t.hero.headline}
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-[60ch]">
-              Code generated in minutes is fragile in production. Proofline continuously tests your
-              Lovable, Bolt, Cursor, and Replit flows—catching leaked keys, open tables, and broken
-              screens before real customers hit an error.
+              {t.hero.subheadline}
             </p>
 
             <div className="mt-8 max-w-xl">
@@ -121,20 +107,18 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                   </motion.div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                      {submitted.alreadyRegistered
-                        ? 'You are already on the Proofline early access list.'
-                        : 'You are on the early access list.'}
+                      {submitted.alreadyRegistered ? t.hero.confirmedAlready : t.hero.confirmedNew}
                     </p>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      We saved{' '}
+                      {t.hero.savedPrefix}{' '}
                       <span className="font-mono text-slate-900 dark:text-white break-all">
                         {submitted.entry.email}
                       </span>{' '}
-                      for{' '}
+                      {t.hero.savedMiddle}{' '}
                       <span className="font-medium text-slate-900 dark:text-white">
-                        {submitted.entry.builderTool}
-                      </span>{' '}
-                      beta access.
+                        {formatBuilderLabel(submitted.entry.builderTool, locale)}
+                      </span>
+                      {t.hero.savedSuffix}
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
                       <button
@@ -142,7 +126,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                         onClick={onJumpToLiveAudit}
                         className="inline-flex items-center gap-1 font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
-                        <span>Try the live screenshot audit</span>
+                        <span>{t.hero.jumpToAudit}</span>
                         <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                       <button
@@ -154,7 +138,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                         }}
                         className="font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
-                        Register another email
+                        {t.hero.registerAnother}
                       </button>
                     </div>
                   </div>
@@ -164,7 +148,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 min-w-0">
                       <label htmlFor="hero-email" className="sr-only">
-                        Work or personal email
+                        {t.hero.emailLabel}
                       </label>
                       <input
                         ref={emailRef}
@@ -179,7 +163,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                           setEmail(e.target.value);
                           if (error) setError(null);
                         }}
-                        placeholder="you@yourstartup.com"
+                        placeholder={t.hero.emailPlaceholder}
                         className={`w-full px-4 py-3 min-h-[46px] text-sm bg-white dark:bg-[#111827] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                           error
                             ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
@@ -190,18 +174,18 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
 
                     <div className="sm:w-36">
                       <label htmlFor="hero-builder" className="sr-only">
-                        Built with tool
+                        {t.hero.builderLabel}
                       </label>
                       <select
                         id="hero-builder"
-                        aria-label="Built with AI builder"
+                        aria-label={t.hero.builderAria}
                         value={builderTool}
                         onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
                         className="w-full px-3 py-3 min-h-[46px] text-sm bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 transition-colors cursor-pointer"
                       >
                         {BUILDER_OPTIONS.map((tool) => (
                           <option key={tool} value={tool}>
-                            {tool}
+                            {formatBuilderLabel(tool, locale)}
                           </option>
                         ))}
                       </select>
@@ -212,7 +196,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                       disabled={submitting}
                       className="px-5 py-3 min-h-[46px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-60 active:scale-[0.99] rounded-lg transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                     >
-                      {submitting ? 'Joining...' : 'Get Early Access'}
+                      {submitting ? t.hero.submitting : t.hero.submit}
                     </button>
                   </div>
 
@@ -230,7 +214,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-1">
                     <span className="inline-flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-[#1E40AF] dark:text-[#60A5FA]" aria-hidden="true" />
-                      <span>Zero code retention · Free during beta</span>
+                      <span>{t.hero.reassurance}</span>
                     </span>
                     <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                       ·
@@ -240,7 +224,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                       onClick={onJumpToLiveAudit}
                       className="inline-flex items-center gap-1 font-medium text-[#1E40AF] hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                     >
-                      <span>Try the live screenshot audit</span>
+                      <span>{t.hero.jumpToAudit}</span>
                       <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
@@ -252,7 +236,7 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
           {/* Authored Proofline Diagnostic Preview Surface */}
           <div className="lg:col-span-5">
             <div
-              aria-label="Sample Proofline verification report"
+              aria-label={t.hero.workbenchAria}
               className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-sm dark:shadow-none"
             >
               <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0D1321] flex items-center justify-between gap-3">
@@ -266,13 +250,13 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
                   </span>
                 </div>
                 <span className="text-xs font-medium text-rose-700 dark:text-rose-400 whitespace-nowrap shrink-0">
-                  High Risk
+                  {t.hero.highRisk}
                 </span>
               </div>
 
               <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                {SAMPLE_WORKBENCH_CHECKS.map((item) => (
-                  <div key={item.message} className="px-5 py-4 flex items-start gap-3">
+                {t.hero.checks.map((item) => (
+                  <div key={item.area} className="px-5 py-4 flex items-start gap-3">
                     {item.severity === 'Critical' ? (
                       <ShieldAlert
                         className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5"
@@ -304,19 +288,18 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
               <div className="px-5 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-[#090D16]/70">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                    Generated fix prompt · Paste into Bolt
+                    {t.hero.promptHeader}
                   </span>
                   <button
                     type="button"
                     onClick={onJumpToLiveAudit}
                     className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                   >
-                    Run live check
+                    {t.hero.runLiveCheck}
                   </button>
                 </div>
                 <p className="font-mono text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
-                  “Move Stripe secret keys into a server route at /api/checkout and enforce RLS on
-                  public.users before returning customer rows.”
+                  {t.hero.promptBody}
                 </p>
               </div>
             </div>
@@ -325,39 +308,16 @@ export function HeroSection({ onWaitlistSuccess, onJumpToLiveAudit }: HeroSectio
 
         {/* Full-width 4-column outcome strip below the hero split */}
         <div className="mt-14 pt-10 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div>
-            <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-              Every user flow verified
-            </p>
-            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Sign-ups, checkouts, and forms run in real browsers after every prompt you ship.
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-              Nothing left exposed
-            </p>
-            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Flags public API keys, open Supabase tables, and missing auth checks automatically.
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-              Fixes in plain English
-            </p>
-            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Get exact repair prompts to paste back into Lovable, Bolt, or Cursor—no terminal
-              needed.
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-              2-minute onboarding
-            </p>
-            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              Connect a preview link or repo. Proofline maps your routes and guards them nonstop.
-            </p>
-          </div>
+          {t.hero.outcomes.map((outcome) => (
+            <div key={outcome.title}>
+              <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
+                {outcome.title}
+              </p>
+              <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {outcome.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

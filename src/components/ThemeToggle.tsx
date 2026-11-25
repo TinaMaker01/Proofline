@@ -5,13 +5,22 @@ export type ThemeMode = 'dark' | 'light';
 interface ThemeToggleProps {
   theme: ThemeMode;
   onChangeTheme: (next: ThemeMode) => void;
+  groupLabel?: string;
+  darkLabel?: string;
+  lightLabel?: string;
 }
 
-export function ThemeToggle({ theme, onChangeTheme }: ThemeToggleProps) {
+export function ThemeToggle({
+  theme,
+  onChangeTheme,
+  groupLabel = 'Thème visuel',
+  darkLabel = 'Sombre',
+  lightLabel = 'Clair',
+}: ThemeToggleProps) {
   return (
     <div
       role="group"
-      aria-label="Color theme"
+      aria-label={groupLabel}
       className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-200/80 dark:bg-[#111827] border border-slate-300/70 dark:border-slate-800 shrink-0"
     >
       <button
@@ -25,7 +34,7 @@ export function ThemeToggle({ theme, onChangeTheme }: ThemeToggleProps) {
         }`}
       >
         <Moon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span>Dark</span>
+        <span>{darkLabel}</span>
       </button>
 
       <button
@@ -39,7 +48,7 @@ export function ThemeToggle({ theme, onChangeTheme }: ThemeToggleProps) {
         }`}
       >
         <Sun className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span>Light</span>
+        <span>{lightLabel}</span>
       </button>
     </div>
   );

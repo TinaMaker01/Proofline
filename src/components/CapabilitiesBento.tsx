@@ -1,18 +1,11 @@
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import type { SiteTranslations } from '../i18n/translations';
 
-const FLOW_TRACE_STEPS = [
-  { step: 'Sign up (/signup)', desktop: '200 OK · 1.1s', mobile: '200 OK', status: 'pass' },
-  { step: 'Verify session', desktop: 'JWT scoped', mobile: 'JWT scoped', status: 'pass' },
-  { step: 'Stripe checkout', desktop: '200 OK · 1.4s', mobile: 'CTA clipped at 390px', status: 'warn' },
-] as const;
+interface CapabilitiesBentoProps {
+  t: SiteTranslations;
+}
 
-const REGRESSION_DIFFS = [
-  { check: 'Auth redirect (/dashboard)', baseline: '200 OK', preview: '200 OK', status: 'pass' },
-  { check: 'POST /api/checkout', baseline: '200 OK', preview: '500 · missing STRIPE_WEBHOOK_SECRET', status: 'fail' },
-  { check: 'Public bundle scan', baseline: '0 secrets', preview: '0 secrets', status: 'pass' },
-] as const;
-
-export function CapabilitiesBento() {
+export function CapabilitiesBento({ t }: CapabilitiesBentoProps) {
   return (
     <section
       id="how-it-works"
@@ -24,12 +17,10 @@ export function CapabilitiesBento() {
             className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
             style={{ textWrap: 'balance' }}
           >
-            AI tools move fast. Silent regressions move faster.
+            {t.bento.heading}
           </h2>
           <p className="mt-4 max-w-[54ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-            Fixing a button on your pricing page shouldn’t break Stripe webhooks or expose your user
-            table. Proofline watches every change so non-technical builders ship with engineering
-            rigor.
+            {t.bento.subheading}
           </p>
         </div>
 
@@ -39,16 +30,14 @@ export function CapabilitiesBento() {
           <article className="lg:col-span-2 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between">
             <div className="p-7 sm:p-8">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
-                Continuous Flow Verification
+                {t.bento.flowTitle}
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
-                Every time you regenerate a screen or merge an edit, headless browsers walk through
-                account creation, login, forms, and checkout across desktop and mobile viewports. If
-                a button stops responding or a redirect loops, you know in under 90 seconds.
+                {t.bento.flowDesc}
               </p>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] divide-y divide-slate-200 dark:divide-slate-800">
-              {FLOW_TRACE_STEPS.map((row) => (
+              {t.bento.flowSteps.map((row) => (
                 <div
                   key={row.step}
                   className="px-7 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 text-xs"
@@ -92,34 +81,25 @@ export function CapabilitiesBento() {
           <article className="lg:col-span-1 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-7 sm:p-8 flex flex-col justify-between">
             <div>
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
-                Exposure & Secret Guard
+                {t.bento.guardTitle}
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                AI code generators frequently ship client-side API keys, permissive database rules,
-                or unprotected admin endpoints. Proofline scans your live build and network traffic
-                to make sure private data stays private.
+                {t.bento.guardDesc}
               </p>
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-                <span>Client bundle key scan</span>
-                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
-                  Every deploy
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-                <span>Row-level access check</span>
-                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
-                  Supabase & Firebase
-                </span>
-              </div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-                <span>Unauthenticated route probe</span>
-                <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
-                  API & webhooks
-                </span>
-              </div>
+              {t.bento.guardItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5"
+                >
+                  <span>{item.label}</span>
+                  <span className="font-mono text-xs text-slate-600 dark:text-slate-400 shrink-0">
+                    {item.tag}
+                  </span>
+                </div>
+              ))}
             </div>
           </article>
 
@@ -127,22 +107,19 @@ export function CapabilitiesBento() {
           <article className="lg:col-span-1 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-7 sm:p-8 flex flex-col justify-between">
             <div>
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
-                One-Prompt Auto-Fixes
+                {t.bento.promptTitle}
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                You shouldn’t need to decipher CORS headers or TypeScript stack traces. Every issue
-                comes with a plain-English explanation and a tested repair prompt ready to paste
-                into Lovable, Bolt, or Cursor.
+                {t.bento.promptDesc}
               </p>
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-                Sample generated repair prompt
+                {t.bento.samplePromptLabel}
               </p>
               <p className="font-mono text-xs leading-relaxed text-slate-700 dark:text-slate-200 bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 rounded-lg p-3.5">
-                “Move the Stripe secret lookup into a server route at /api/checkout and require an
-                authenticated session before returning customer invoice rows.”
+                {t.bento.samplePromptBody}
               </p>
             </div>
           </article>
@@ -151,16 +128,14 @@ export function CapabilitiesBento() {
           <article className="lg:col-span-2 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between">
             <div className="p-7 sm:p-8">
               <h3 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
-                Pre-Launch Regression Shield
+                {t.bento.shieldTitle}
               </h3>
               <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
-                Compare every new preview build against your last working release. Proofline
-                isolates broken layouts, missing environment variables, and dead API calls before
-                you share your link with investors, Product Hunt, or paying users.
+                {t.bento.shieldDesc}
               </p>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] divide-y divide-slate-200 dark:divide-slate-800">
-              {REGRESSION_DIFFS.map((diff) => (
+              {t.bento.shieldDiffs.map((diff) => (
                 <div
                   key={diff.check}
                   className="px-7 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 text-xs"
@@ -183,7 +158,7 @@ export function CapabilitiesBento() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono tabular-nums">
                     <span className="text-slate-600 dark:text-slate-400">
-                      Last pass: {diff.baseline}
+                      {diff.baselineLabel}: {diff.baseline}
                     </span>
                     <span
                       className={
@@ -192,7 +167,7 @@ export function CapabilitiesBento() {
                           : 'text-slate-600 dark:text-slate-400'
                       }
                     >
-                      Preview: {diff.preview}
+                      {diff.previewLabel}: {diff.preview}
                     </span>
                   </div>
                 </div>

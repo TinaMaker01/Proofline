@@ -31,25 +31,18 @@ import type {
   ScreenshotFinding,
 } from '../types/qa';
 import { analyzeScreenshotLocally, askQAAdvisor } from '../services/qaClient';
+import { formatBuilderLabel, type Locale, type SiteTranslations } from '../i18n/translations';
+
+interface LiveQAStudioProps {
+  locale: Locale;
+  t: SiteTranslations;
+}
 
 const BUILDERS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
-const STARTER_PROMPTS = [
-  'How do I check if my Supabase keys or tables are exposed in a Lovable app?',
-  'My Bolt app works in preview but login fails after deploying to a custom domain.',
-  'What 5 checks should I run before taking real Stripe payments on a Cursor MVP?',
-];
-
-const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'model',
-  text: 'Ask me about any fragile flow, auth bug, or potential data exposure in your Lovable, Bolt, Cursor, or Replit app. I can walk you through what to check and write a repair prompt you can paste directly into your builder.',
-  timestamp: 'Now',
-};
-
 /**
  * Generates a realistic demo PNG screenshot on an HTML5 canvas so visitors
- * without an app screenshot handy can test real multimodal AI image analysis.
+ * without an app screenshot handy can test screenshot analysis.
  */
 function buildDemoBrokenAppScreenshot(): string {
   const canvas = document.createElement('canvas');
@@ -224,12 +217,18 @@ function renderMessageLines(text: string) {
   });
 }
 
-function SeverityIndicator({ severity }: { severity: FindingSeverity }) {
+function SeverityIndicator({
+  severity,
+  label,
+}: {
+  severity: FindingSeverity;
+  label: string;
+}) {
   if (severity === 'Critical') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400">
         <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span>Critical</span>
+        <span>{label}</span>
       </span>
     );
   }
@@ -237,19 +236,19 @@ function SeverityIndicator({ severity }: { severity: FindingSeverity }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
         <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span>Warning</span>
+        <span>{label}</span>
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
       <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-      <span>Suggestion</span>
+      <span>{label}</span>
     </span>
   );
 }
 
-export function LiveQAStudio() {
+export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
   const [activeTab, setActiveTab] = useState<'screenshot' | 'chat'>('screenshot');
 
   // Shared builder selection across Screenshot Audit & Advisor tabs
@@ -276,7 +275,14 @@ export function LiveQAStudio() {
   const copyMsgTimerRef = useRef<number | null>(null);
 
   // Multi-turn AI Chat state
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: 'welcome',
+      role: 'model',
+      text: t.studio.welcomeMessage,
+      timestamp: t.studio.now,
+    },
+  ]);
   const [archivedMessages, setArchivedMessages] = useState<ChatMessage[] | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatSending, setChatSending] = useState(false);
@@ -285,6 +291,22 @@ export function LiveQAStudio() {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const prevMsgCountRef = useRef<number>(1);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'welcome') {
+        return [
+          {
+            id: 'welcome',
+            role: 'model',
+            text: t.studio.welcomeMessage,
+            timestamp: t.studio.now,
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [locale, t.studio.welcomeMessage, t.studio.now]);
 
   useEffect(() => {
     return () => {
@@ -327,11 +349,11 @@ export function LiveQAStudio() {
     setAnalysisResult(null);
 
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-      setAnalysisError('Please choose a PNG, JPEG, or WebP screenshot.');
+      setAnalysisError(t.studio.errors.invalidFileType);
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
-      setAnalysisError('Screenshot must be smaller than 8 MB.');
+      setAnalysisError(t.studio.errors.fileTooLarge);
       return;
     }
 
@@ -340,11 +362,11 @@ export function LiveQAStudio() {
       if (typeof reader.result === 'string') {
         setPreviewDataUrl(reader.result);
         setFileName(file.name || 'pasted-screenshot.png');
-        setStatusAnnouncement('Screenshot loaded and ready for audit.');
+        setStatusAnnouncement(t.studio.announcements.screenshotLoaded);
       }
     };
     reader.onerror = () => {
-      setAnalysisError('Could not read the selected image file.');
+      setAnalysisError(t.studio.errors.fileReadError);
     };
     reader.readAsDataURL(file);
   }
@@ -381,16 +403,16 @@ export function LiveQAStudio() {
     setAnalysisResult(null);
     const dataUrl = buildDemoBrokenAppScreenshot();
     if (!dataUrl) {
-      setAnalysisError('Could not generate the sample screenshot in this browser.');
+      setAnalysisError(t.studio.errors.demoFailed);
       return;
     }
     setPreviewDataUrl(dataUrl);
     setFileName('demo-checkout-preview.png');
     setBuilderTool('Bolt');
     if (!focusNote.trim()) {
-      setFocusNote('Check for exposed secrets, broken checkout layout, and data leaks.');
+      setFocusNote(t.studio.demoFocusDefault);
     }
-    setStatusAnnouncement('Demo app screenshot loaded.');
+    setStatusAnnouncement(t.studio.announcements.demoLoaded);
   }
 
   function handleClearScreenshot() {
@@ -401,13 +423,13 @@ export function LiveQAStudio() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    setStatusAnnouncement('Screenshot removed.');
+    setStatusAnnouncement(t.studio.announcements.screenshotRemoved);
   }
 
   async function handleAnalyzeScreenshot(e: FormEvent) {
     e.preventDefault();
     if (!previewDataUrl) {
-      setAnalysisError('Upload a screenshot or load the demo screenshot first.');
+      setAnalysisError(t.studio.errors.noScreenshot);
       return;
     }
 
@@ -419,17 +441,17 @@ export function LiveQAStudio() {
         builderTool,
         focusNote,
         isDemoScreenshot: fileName === 'demo-checkout-preview.png',
+        locale,
       });
       setAnalysisResult(typed);
       setStatusAnnouncement(
-        `Screenshot audit complete: ${typed.readinessStatus}, ${typed.findings.length} ${
-          typed.findings.length === 1 ? 'finding' : 'findings'
-        }.`
+        t.studio.announcements.auditComplete(
+          t.studio.readinessLabels[typed.readinessStatus],
+          typed.findings.length
+        )
       );
     } catch (err) {
-      setAnalysisError(
-        err instanceof Error ? err.message : 'Could not complete the screenshot audit.'
-      );
+      setAnalysisError(err instanceof Error ? err.message : t.studio.errors.auditFailed);
     } finally {
       setAnalyzing(false);
     }
@@ -439,7 +461,7 @@ export function LiveQAStudio() {
     try {
       await navigator.clipboard.writeText(text);
       onDone();
-      setStatusAnnouncement('Copied to clipboard.');
+      setStatusAnnouncement(t.studio.announcements.copied);
       return;
     } catch {
       // Fallback for restricted clipboard contexts
@@ -456,7 +478,7 @@ export function LiveQAStudio() {
       document.body.removeChild(textarea);
       if (ok) {
         onDone();
-        setStatusAnnouncement('Copied to clipboard.');
+        setStatusAnnouncement(t.studio.announcements.copied);
       }
     } catch {
       // Ignore if clipboard is completely unavailable
@@ -464,7 +486,9 @@ export function LiveQAStudio() {
   }
 
   function handleAskAdvisorAboutFinding(finding: ScreenshotFinding) {
-    const prompt = `In my ${builderTool} app, Proofline flagged "${finding.title}" (${finding.category}): ${finding.detail} How should I verify the fix safely?`;
+    const builderLabel = formatBuilderLabel(builderTool, locale);
+    const categoryLabel = t.studio.categoryLabels[finding.category];
+    const prompt = `${t.studio.askAdvisorPrefix} ${builderLabel}${t.studio.askAdvisorMiddle} « ${finding.title} » (${categoryLabel}) : ${finding.detail} ${t.studio.askAdvisorSuffix}`;
     setActiveTab('chat');
     setChatInput(prompt);
     window.setTimeout(() => {
@@ -480,9 +504,13 @@ export function LiveQAStudio() {
     setFailedPrompt(null);
     setArchivedMessages(null);
 
+    const timeLocale = locale === 'fr' ? 'fr-FR' : 'en-US';
     let nextHistory = messages;
     if (!isRetry) {
-      const nowLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const nowLabel = new Date().toLocaleTimeString(timeLocale, {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         role: 'user',
@@ -504,19 +532,21 @@ export function LiveQAStudio() {
       const reply = await askQAAdvisor({
         messages: apiMessages,
         builderContext: builderTool,
+        locale,
       });
 
       const replyMsg: ChatMessage = {
         id: `model-${Date.now()}`,
         role: 'model',
         text: reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date().toLocaleTimeString(timeLocale, {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
       };
       setMessages((prev) => [...prev, replyMsg]);
     } catch (err) {
-      setChatError(
-        err instanceof Error ? err.message : 'Could not reach the QA advisor right now.'
-      );
+      setChatError(err instanceof Error ? err.message : t.studio.errors.chatFailed);
       setFailedPrompt(trimmed);
     } finally {
       setChatSending(false);
@@ -538,8 +568,8 @@ export function LiveQAStudio() {
       {
         id: 'welcome',
         role: 'model',
-        text: 'Conversation reset. Ask anything about testing, securing, or fixing your AI-built app.',
-        timestamp: 'Now',
+        text: t.studio.resetMessage,
+        timestamp: t.studio.now,
       },
     ]);
   }
@@ -568,18 +598,17 @@ export function LiveQAStudio() {
               className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
               style={{ textWrap: 'balance' }}
             >
-              Run a live audit on your app right now.
+              {t.studio.heading}
             </h2>
             <p className="mt-4 max-w-[54ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-              Upload or paste a screenshot from Lovable, Bolt, or Cursor to catch visible exposures
-              and broken states—or chat with our QA advisor for a tailored pre-launch checklist.
+              {t.studio.subheading}
             </p>
           </div>
 
           {/* Interactive segmented tab control */}
           <div
             role="tablist"
-            aria-label="Live QA Studio modes"
+            aria-label={t.studio.tablistAria}
             className="inline-flex flex-wrap items-center gap-1 p-1 max-w-full bg-slate-200/70 dark:bg-[#111827] border border-transparent dark:border-slate-800 rounded-lg self-start lg:self-auto"
           >
             <button
@@ -599,7 +628,7 @@ export function LiveQAStudio() {
               }`}
             >
               <ScanSearch className="w-4 h-4 shrink-0" aria-hidden="true" />
-              <span>Screenshot Audit</span>
+              <span>{t.studio.tabScreenshot}</span>
             </button>
             <button
               ref={tabChatRef}
@@ -618,7 +647,7 @@ export function LiveQAStudio() {
               }`}
             >
               <MessageSquare className="w-4 h-4 shrink-0" aria-hidden="true" />
-              <span>QA & Security Advisor</span>
+              <span>{t.studio.tabChat}</span>
             </button>
           </div>
         </div>
@@ -640,13 +669,13 @@ export function LiveQAStudio() {
               >
                 <div className="space-y-5">
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <label
                         id="screenshot-upload-label"
                         htmlFor="screenshot-file-input"
                         className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC]"
                       >
-                        App screenshot
+                        {t.studio.uploadLabel}
                       </label>
                       {!previewDataUrl ? (
                         <button
@@ -654,7 +683,7 @@ export function LiveQAStudio() {
                           onClick={handleLoadDemoScreenshot}
                           className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                         >
-                          Load demo app screenshot
+                          {t.studio.loadDemo}
                         </button>
                       ) : (
                         <button
@@ -663,7 +692,7 @@ export function LiveQAStudio() {
                           className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                         >
                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                          <span>Remove</span>
+                          <span>{t.studio.remove}</span>
                         </button>
                       )}
                     </div>
@@ -712,21 +741,20 @@ export function LiveQAStudio() {
                           aria-hidden="true"
                         />
                         <p className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-                          Drop, browse, or paste screenshot (Ctrl+V)
+                          {t.studio.dropTitle}
                         </p>
                         <p
                           id="screenshot-upload-hint"
                           className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed"
                         >
-                          PNG, JPEG, or WebP up to 8 MB · Crop real customer PII first · Analyzed in
-                          memory, never stored
+                          {t.studio.dropHint}
                         </p>
                       </div>
                     ) : (
                       <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50 dark:bg-[#090D16]">
                         <img
                           src={previewDataUrl}
-                          alt={fileName || 'Uploaded application screenshot'}
+                          alt={fileName || t.studio.uploadedAltFallback}
                           className="w-full max-h-60 object-contain bg-slate-100 dark:bg-[#090D16]"
                         />
                         <div className="px-3.5 py-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
@@ -736,7 +764,7 @@ export function LiveQAStudio() {
                             onClick={() => fileInputRef.current?.click()}
                             className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline whitespace-nowrap shrink-0 cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                           >
-                            Replace
+                            {t.studio.replace}
                           </button>
                         </div>
                       </div>
@@ -749,7 +777,7 @@ export function LiveQAStudio() {
                         htmlFor="audit-builder-select"
                         className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                       >
-                        Built with
+                        {t.studio.builtWith}
                       </label>
                       <select
                         id="audit-builder-select"
@@ -759,7 +787,7 @@ export function LiveQAStudio() {
                       >
                         {BUILDERS.map((tool) => (
                           <option key={tool} value={tool}>
-                            {tool}
+                            {formatBuilderLabel(tool, locale)}
                           </option>
                         ))}
                       </select>
@@ -769,14 +797,14 @@ export function LiveQAStudio() {
                         htmlFor="audit-focus-input"
                         className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                       >
-                        Focus area (optional)
+                        {t.studio.focusArea}
                       </label>
                       <input
                         id="audit-focus-input"
                         type="text"
                         value={focusNote}
                         onChange={(e) => setFocusNote(e.target.value)}
-                        placeholder="e.g., Auth or checkout"
+                        placeholder={t.studio.focusPlaceholder}
                         maxLength={200}
                         className="w-full px-3 py-2.5 min-h-[42px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
                       />
@@ -803,7 +831,7 @@ export function LiveQAStudio() {
                     disabled={analyzing || !previewDataUrl}
                     className="w-full px-5 py-3 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                   >
-                    {analyzing ? 'Inspecting screenshot...' : 'Run QA & Security Audit'}
+                    {analyzing ? t.studio.inspecting : t.studio.runAudit}
                   </button>
                 </div>
               </form>
@@ -817,11 +845,11 @@ export function LiveQAStudio() {
                       className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 border-t-[#1E40AF] dark:border-t-[#3B82F6] animate-spin mb-4"
                     />
                     <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                      Checking flows, layout integrity, and visible exposures
+                      {t.studio.checkingTitle}
                     </p>
                     <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 max-w-md">
-                      Reviewing your {builderTool} screenshot and drafting copy-ready repair
-                      prompts...
+                      {t.studio.checkingSubtitlePrefix}{' '}
+                      {formatBuilderLabel(builderTool, locale)} {t.studio.checkingSubtitleSuffix}
                     </p>
                   </div>
                 ) : !analysisResult ? (
@@ -834,19 +862,18 @@ export function LiveQAStudio() {
                       className="font-display text-lg font-semibold text-slate-900 dark:text-[#F8FAFC]"
                       style={{ textWrap: 'balance' }}
                     >
-                      Your diagnostic report appears here
+                      {t.studio.emptyTitle}
                     </p>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-md leading-relaxed">
-                      Upload a screenshot of any login page, dashboard, or checkout modal—or click{' '}
+                      {t.studio.emptyDescBefore}{' '}
                       <button
                         type="button"
                         onClick={handleLoadDemoScreenshot}
                         className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
-                        Load demo app screenshot
+                        {t.studio.loadDemo}
                       </button>{' '}
-                      to see how Proofline surfaces hidden risks and writes ready-to-paste fix
-                      prompts.
+                      {t.studio.emptyDescAfter}
                     </p>
                   </div>
                 ) : (
@@ -858,17 +885,19 @@ export function LiveQAStudio() {
                           <span aria-hidden="true" className="mx-2 text-slate-300 dark:text-slate-700">
                             ·
                           </span>
-                          <span>{builderTool}</span>
+                          <span>{formatBuilderLabel(builderTool, locale)}</span>
                           <span aria-hidden="true" className="mx-2 text-slate-300 dark:text-slate-700">
                             ·
                           </span>
                           <span className="tabular-nums">
                             {analysisResult.findings.length}{' '}
-                            {analysisResult.findings.length === 1 ? 'finding' : 'findings'}
+                            {analysisResult.findings.length === 1
+                              ? t.studio.findingSingular
+                              : t.studio.findingPlural}
                           </span>
                         </p>
                         <h3 className="mt-1 font-display text-xl font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                          Audit Summary
+                          {t.studio.auditSummary}
                         </h3>
                       </div>
 
@@ -879,7 +908,7 @@ export function LiveQAStudio() {
                             const bundle = analysisResult.findings
                               .map(
                                 (f, idx) =>
-                                  `${idx + 1}. [${f.severity} · ${f.category}] ${f.title}\n${f.fixPrompt}`
+                                  `${idx + 1}. [${t.studio.severityLabels[f.severity]} · ${t.studio.categoryLabels[f.category]}] ${f.title}\n${f.fixPrompt}`
                               )
                               .join('\n\n');
                             void handleCopyText(bundle, () => {
@@ -895,12 +924,12 @@ export function LiveQAStudio() {
                           {copiedAll ? (
                             <>
                               <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                              <span>Copied all fixes</span>
+                              <span>{t.studio.copiedAllFixes}</span>
                             </>
                           ) : (
                             <>
                               <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                              <span>Copy all fixes</span>
+                              <span>{t.studio.copyAllFixes}</span>
                             </>
                           )}
                         </button>
@@ -909,17 +938,17 @@ export function LiveQAStudio() {
                           {analysisResult.readinessStatus === 'Ready to Ship' ? (
                             <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
                               <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-                              <span>Ready to Ship</span>
+                              <span>{t.studio.readinessLabels['Ready to Ship']}</span>
                             </span>
                           ) : analysisResult.readinessStatus === 'High Risk' ? (
                             <span className="inline-flex items-center gap-1.5 text-rose-700 dark:text-rose-400">
                               <ShieldAlert className="w-4 h-4" aria-hidden="true" />
-                              <span>High Risk</span>
+                              <span>{t.studio.readinessLabels['High Risk']}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
                               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                              <span>Needs Fixes</span>
+                              <span>{t.studio.readinessLabels['Needs Fixes']}</span>
                             </span>
                           )}
                         </div>
@@ -935,12 +964,15 @@ export function LiveQAStudio() {
                         <div key={`${finding.title}-${idx}`} className="py-5 space-y-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2.5">
-                              <SeverityIndicator severity={finding.severity} />
+                              <SeverityIndicator
+                                severity={finding.severity}
+                                label={t.studio.severityLabels[finding.severity]}
+                              />
                               <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                                 ·
                               </span>
                               <span className="text-xs text-slate-600 dark:text-slate-400">
-                                {finding.category}
+                                {t.studio.categoryLabels[finding.category]}
                               </span>
                             </div>
                             <button
@@ -949,7 +981,7 @@ export function LiveQAStudio() {
                               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#1E40AF] dark:hover:text-[#60A5FA] cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                             >
                               <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
-                              <span>Ask Advisor</span>
+                              <span>{t.studio.askAdvisor}</span>
                             </button>
                           </div>
 
@@ -965,7 +997,7 @@ export function LiveQAStudio() {
                           <div className="bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 rounded-lg p-3.5">
                             <div className="flex items-center justify-between gap-3 mb-1.5">
                               <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                                Paste into {builderTool}
+                                {t.studio.pasteInto} {formatBuilderLabel(builderTool, locale)}
                               </span>
                               <button
                                 type="button"
@@ -986,12 +1018,12 @@ export function LiveQAStudio() {
                                 {copiedIdx === idx ? (
                                   <>
                                     <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                                    <span>Copied</span>
+                                    <span>{t.studio.copied}</span>
                                   </>
                                 ) : (
                                   <>
                                     <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                                    <span>Copy fix prompt</span>
+                                    <span>{t.studio.copyFixPrompt}</span>
                                   </>
                                 )}
                               </button>
@@ -1022,7 +1054,7 @@ export function LiveQAStudio() {
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-[#F8FAFC] dark:bg-[#0D1321]">
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-display font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                  QA & Security Advisor
+                  {t.studio.advisorTitle}
                 </span>
                 <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                   ·
@@ -1031,7 +1063,7 @@ export function LiveQAStudio() {
                   htmlFor="chat-builder-select"
                   className="text-xs text-slate-600 dark:text-slate-400"
                 >
-                  Stack context:
+                  {t.studio.stackContext}
                 </label>
                 <select
                   id="chat-builder-select"
@@ -1041,7 +1073,7 @@ export function LiveQAStudio() {
                 >
                   {BUILDERS.map((tool) => (
                     <option key={tool} value={tool}>
-                      {tool}
+                      {formatBuilderLabel(tool, locale)}
                     </option>
                   ))}
                 </select>
@@ -1054,7 +1086,7 @@ export function LiveQAStudio() {
                     onClick={handleUndoResetChat}
                     className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                   >
-                    Undo reset
+                    {t.studio.undoReset}
                   </button>
                 )}
                 <button
@@ -1063,7 +1095,7 @@ export function LiveQAStudio() {
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#F8FAFC] cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                 >
                   <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Reset thread</span>
+                  <span>{t.studio.resetThread}</span>
                 </button>
               </div>
             </div>
@@ -1082,7 +1114,7 @@ export function LiveQAStudio() {
                   >
                     <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1.5">
                       <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {isUser ? 'You' : 'Proofline Advisor'}
+                        {isUser ? t.studio.you : t.studio.advisorName}
                       </span>
                       <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
                         ·
@@ -1127,12 +1159,12 @@ export function LiveQAStudio() {
                               className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400"
                               aria-hidden="true"
                             />
-                            <span>Copied response</span>
+                            <span>{t.studio.copiedResponse}</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                            <span>Copy</span>
+                            <span>{t.studio.copy}</span>
                           </>
                         )}
                       </button>
@@ -1144,10 +1176,10 @@ export function LiveQAStudio() {
               {chatSending && (
                 <div className="flex flex-col items-start">
                   <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Proofline Advisor
+                    {t.studio.advisorName}
                   </span>
                   <div className="bg-[#F8FAFC] dark:bg-[#161F33] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                    Reviewing your question and preparing checks...
+                    {t.studio.preparingChecks}
                   </div>
                 </div>
               )}
@@ -1158,7 +1190,7 @@ export function LiveQAStudio() {
             {/* Starter quick-prompts when conversation is fresh */}
             {messages.length <= 1 && (
               <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800/80 bg-[#F8FAFC]/60 dark:bg-[#0D1321]/70 flex flex-wrap gap-2">
-                {STARTER_PROMPTS.map((prompt) => (
+                {t.studio.starterPrompts.map((prompt) => (
                   <button
                     key={prompt}
                     type="button"
@@ -1190,7 +1222,7 @@ export function LiveQAStudio() {
                       disabled={chatSending}
                       className="font-semibold underline underline-offset-4 hover:text-rose-900 dark:hover:text-rose-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 rounded-sm"
                     >
-                      Retry message
+                      {t.studio.retryMessage}
                     </button>
                   )}
                 </div>
@@ -1198,7 +1230,7 @@ export function LiveQAStudio() {
 
               <form onSubmit={handleChatSubmit} className="flex items-center gap-2.5">
                 <label htmlFor="advisor-chat-input" className="sr-only">
-                  Ask Proofline Advisor a QA or security question
+                  {t.studio.chatInputAria}
                 </label>
                 <input
                   ref={chatInputRef}
@@ -1206,7 +1238,10 @@ export function LiveQAStudio() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Ask about testing, auth, or security in your ${builderTool} app...`}
+                  placeholder={`${t.studio.chatPlaceholderPrefix} ${formatBuilderLabel(
+                    builderTool,
+                    locale
+                  )}${t.studio.chatPlaceholderSuffix}`}
                   maxLength={2000}
                   disabled={chatSending}
                   className="flex-1 min-w-0 px-4 py-2.5 min-h-[44px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
@@ -1217,7 +1252,7 @@ export function LiveQAStudio() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                 >
                   <Send className="w-4 h-4" aria-hidden="true" />
-                  <span>Send</span>
+                  <span>{t.studio.send}</span>
                 </button>
               </form>
             </div>

@@ -4,8 +4,11 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 import type { BuilderTool, WaitlistResponse } from '../types/qa';
 import { WaitlistSuccessBurst } from './WaitlistSuccessBurst';
 import { normalizeOptionalHttpUrl, submitWaitlist } from '../services/qaClient';
+import { formatBuilderLabel, type Locale, type SiteTranslations } from '../i18n/translations';
 
 interface WaitlistSectionProps {
+  locale: Locale;
+  t: SiteTranslations;
   emailInputRef: RefObject<HTMLInputElement | null>;
   latestSignup: WaitlistResponse | null;
   waitlistCount: number | null;
@@ -14,13 +17,6 @@ interface WaitlistSectionProps {
 
 const BUILDER_TOOLS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
-const PAIN_POINTS = [
-  'Flows breaking after new prompts',
-  'Exposed API keys or open database tables',
-  'Auth and Stripe checkout bugs in production',
-  'Mobile layout glitches before launch',
-];
-
 function isValidOptionalUrl(rawUrl: string): boolean {
   const trimmed = rawUrl.trim();
   if (!trimmed) return true;
@@ -28,6 +24,8 @@ function isValidOptionalUrl(rawUrl: string): boolean {
 }
 
 export function WaitlistSection({
+  locale,
+  t,
   emailInputRef,
   latestSignup,
   waitlistCount,
@@ -36,7 +34,7 @@ export function WaitlistSection({
   const [email, setEmail] = useState('');
   const [builderTool, setBuilderTool] = useState<BuilderTool>('Lovable');
   const [appUrl, setAppUrl] = useState('');
-  const [painPoint, setPainPoint] = useState(PAIN_POINTS[0]);
+  const [painPointIndex, setPainPointIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invalidField, setInvalidField] = useState<'email' | 'appUrl' | null>(null);
@@ -53,14 +51,14 @@ export function WaitlistSection({
 
     const trimmedEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail)) {
-      setError('Please enter a valid email address.');
+      setError(t.waitlist.emailError);
       setInvalidField('email');
       emailInputRef.current?.focus();
       return;
     }
 
     if (!isValidOptionalUrl(appUrl)) {
-      setError('Please enter a valid http or https URL (for example, myapp.lovable.app).');
+      setError(t.waitlist.urlError);
       setInvalidField('appUrl');
       appUrlInputRef.current?.focus();
       return;
@@ -68,22 +66,21 @@ export function WaitlistSection({
 
     setSubmitting(true);
     try {
-      const data = await submitWaitlist({
-        email: trimmedEmail,
-        builderTool,
-        appUrl: appUrl.trim() || undefined,
-        painPoint,
-        source: 'waitlist-section',
-      });
+      const data = await submitWaitlist(
+        {
+          email: trimmedEmail,
+          builderTool,
+          appUrl: appUrl.trim() || undefined,
+          painPoint: t.waitlist.painPoints[painPointIndex],
+          source: 'waitlist-section',
+        },
+        locale
+      );
       setLocalResult(data);
       setDismissedParent(false);
       onWaitlistSuccess(data);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Could not complete signup. Please check your details.'
-      );
+      setError(err instanceof Error ? err.message : t.waitlist.fallbackError);
     } finally {
       setSubmitting(false);
     }
@@ -101,25 +98,22 @@ export function WaitlistSection({
               className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
               style={{ textWrap: 'balance' }}
             >
-              Verify everything before your next launch.
+              {t.waitlist.heading}
             </h2>
             <p className="mt-4 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-              Reserve your spot for automated testing, security verification, and one-prompt fixes.
-              Share what you are building and we will prioritize teams launching in the next 30 days.
+              {t.waitlist.subheading}
             </p>
 
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <p>
                 <span className="font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                  What early members receive:
+                  {t.waitlist.benefitsLead}
                 </span>{' '}
-                unlimited preview checks during beta, live secret & table-rule scanning, and direct
-                onboarding with our founding team.
+                {t.waitlist.benefitsBody}
               </p>
               {waitlistCount !== null && waitlistCount > 0 && (
                 <p className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
-                  {waitlistCount} {waitlistCount === 1 ? 'builder has' : 'builders have'} requested
-                  early access from this workspace.
+                  {t.waitlist.countLabel(waitlistCount)}
                 </p>
               )}
             </div>
@@ -144,31 +138,37 @@ export function WaitlistSection({
                       transition={{ duration: 0.3, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
                       className="shrink-0 mt-0.5"
                     >
-                      <CheckCircle2 className="w-6 h-6 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                      <CheckCircle2
+                        className="w-6 h-6 text-emerald-700 dark:text-emerald-400"
+                        aria-hidden="true"
+                      />
                     </motion.div>
                     <div>
                       <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-[#F8FAFC]">
                         {activeConfirmation.alreadyRegistered
-                          ? 'Your early access spot is confirmed.'
-                          : 'Welcome to the Proofline waitlist.'}
+                          ? t.waitlist.confirmedTitleAlready
+                          : t.waitlist.confirmedTitleNew}
                       </h3>
                       <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                        We registered{' '}
+                        {t.waitlist.confirmedBodyPrefix}{' '}
                         <span className="font-mono text-slate-900 dark:text-white">
                           {activeConfirmation.entry.email}
                         </span>{' '}
-                        with{' '}
+                        {t.waitlist.confirmedBodyMiddle}{' '}
                         <span className="font-medium text-slate-900 dark:text-white">
-                          {activeConfirmation.entry.builderTool}
-                        </span>{' '}
-                        priority access. We will reach out as soon as your invite batch opens.
+                          {formatBuilderLabel(activeConfirmation.entry.builderTool, locale)}
+                        </span>
+                        {t.waitlist.confirmedBodySuffix}
                       </p>
                     </div>
                   </div>
 
                   <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      Registered {new Date(activeConfirmation.entry.createdAt).toLocaleDateString()}
+                    <span className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
+                      {t.waitlist.registeredOn}{' '}
+                      {new Date(activeConfirmation.entry.createdAt).toLocaleDateString(
+                        locale === 'fr' ? 'fr-FR' : 'en-US'
+                      )}
                     </span>
                     <button
                       type="button"
@@ -182,7 +182,7 @@ export function WaitlistSection({
                       }}
                       className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                     >
-                      Register another team email
+                      {t.waitlist.registerAnother}
                     </button>
                   </div>
                 </motion.div>
@@ -194,7 +194,7 @@ export function WaitlistSection({
                         htmlFor="waitlist-email"
                         className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                       >
-                        Email address
+                        {t.waitlist.emailLabel}
                       </label>
                       <input
                         ref={emailInputRef}
@@ -203,7 +203,9 @@ export function WaitlistSection({
                         required
                         autoComplete="email"
                         aria-invalid={invalidField === 'email'}
-                        aria-describedby={error && invalidField === 'email' ? 'waitlist-form-error' : undefined}
+                        aria-describedby={
+                          error && invalidField === 'email' ? 'waitlist-form-error' : undefined
+                        }
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
@@ -212,7 +214,7 @@ export function WaitlistSection({
                             setInvalidField(null);
                           }
                         }}
-                        placeholder="founder@company.com"
+                        placeholder={t.waitlist.emailPlaceholder}
                         className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                           invalidField === 'email'
                             ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
@@ -226,7 +228,7 @@ export function WaitlistSection({
                         htmlFor="waitlist-builder"
                         className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                       >
-                        Primary AI builder
+                        {t.waitlist.builderLabel}
                       </label>
                       <select
                         id="waitlist-builder"
@@ -236,7 +238,7 @@ export function WaitlistSection({
                       >
                         {BUILDER_TOOLS.map((tool) => (
                           <option key={tool} value={tool}>
-                            {tool}
+                            {formatBuilderLabel(tool, locale)}
                           </option>
                         ))}
                       </select>
@@ -248,7 +250,7 @@ export function WaitlistSection({
                       htmlFor="waitlist-url"
                       className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                     >
-                      App or preview URL (optional)
+                      {t.waitlist.urlLabel}
                     </label>
                     <input
                       ref={appUrlInputRef}
@@ -256,7 +258,9 @@ export function WaitlistSection({
                       type="text"
                       inputMode="url"
                       aria-invalid={invalidField === 'appUrl'}
-                      aria-describedby={error && invalidField === 'appUrl' ? 'waitlist-form-error' : undefined}
+                      aria-describedby={
+                        error && invalidField === 'appUrl' ? 'waitlist-form-error' : undefined
+                      }
                       value={appUrl}
                       onChange={(e) => {
                         setAppUrl(e.target.value);
@@ -265,7 +269,7 @@ export function WaitlistSection({
                           setInvalidField(null);
                         }
                       }}
-                      placeholder="https://myapp.lovable.app"
+                      placeholder={t.waitlist.urlPlaceholder}
                       className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                         invalidField === 'appUrl'
                           ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
@@ -276,16 +280,16 @@ export function WaitlistSection({
 
                   <fieldset>
                     <legend className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      What worries you most before shipping?
+                      {t.waitlist.painLegend}
                     </legend>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {PAIN_POINTS.map((option) => {
-                        const selected = painPoint === option;
+                      {t.waitlist.painPoints.map((option, idx) => {
+                        const selected = painPointIndex === idx;
                         return (
                           <button
-                            key={option}
+                            key={idx}
                             type="button"
-                            onClick={() => setPainPoint(option)}
+                            onClick={() => setPainPointIndex(idx)}
                             aria-pressed={selected}
                             className={`px-3.5 py-2.5 text-left text-xs font-medium rounded-lg border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                               selected
@@ -313,14 +317,14 @@ export function WaitlistSection({
 
                   <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <p className="text-xs text-slate-600 dark:text-slate-400">
-                      No spam. Only your early access invite and cohort updates.
+                      {t.waitlist.noSpam}
                     </p>
                     <button
                       type="submit"
                       disabled={submitting}
                       className="px-6 py-3 text-sm font-medium text-white bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] disabled:opacity-60 active:scale-[0.99] rounded-lg transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
                     >
-                      {submitting ? 'Submitting...' : 'Get Early Access'}
+                      {submitting ? t.waitlist.submitting : t.waitlist.submit}
                     </button>
                   </div>
                 </form>
