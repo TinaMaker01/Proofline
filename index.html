@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" class="dark scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proofline — Continuous QA & Security for AI-Generated Apps</title>
+    <meta
+      name="description"
+      content="Automated testing, security verification, and plain-English fixes for apps built with Lovable, Bolt, and Cursor. Continuously verify that everything is working and nothing is exposed."
+    />
+    <meta property="og:title" content="Proofline — Continuous QA & Security for AI-Generated Apps" />
+    <meta
+      property="og:description"
+      content="We continuously verify that everything is working and that nothing is exposed across your Lovable, Bolt, and Cursor apps."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('proofline-theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-[#F8FAFC] antialiased selection:bg-[#2563EB]/20 selection:text-[#1E40AF] dark:selection:bg-[#3B82F6]/30 dark:selection:text-[#BFDBFE] transition-colors duration-150">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
