@@ -1,6 +1,7 @@
 import { ThemeToggle, type ThemeMode } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
 import type { Locale, SiteTranslations } from '../i18n/translations';
+import type { LegalModalKind } from './LegalModal';
 
 interface FooterProps {
   theme: ThemeMode;
@@ -8,9 +9,17 @@ interface FooterProps {
   locale: Locale;
   onChangeLocale: (next: Locale) => void;
   t: SiteTranslations;
+  onOpenLegal: (kind: LegalModalKind) => void;
 }
 
-export function Footer({ theme, onChangeTheme, locale, onChangeLocale, t }: FooterProps) {
+export function Footer({
+  theme,
+  onChangeTheme,
+  locale,
+  onChangeLocale,
+  t,
+  onOpenLegal,
+}: FooterProps) {
   return (
     <footer className="py-12 bg-[#F8FAFC] dark:bg-[#090D16] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -25,36 +34,27 @@ export function Footer({ theme, onChangeTheme, locale, onChangeLocale, t }: Foot
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs text-slate-600 dark:text-slate-300">
-          <a
-            href="#how-it-works"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+          <button
+            type="button"
+            onClick={() => onOpenLegal('legal')}
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
-            {t.nav.howItWorks}
-          </a>
-          <a
-            href="#live-audit"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            {t.footer.legal}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenLegal('privacy')}
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
-            {t.nav.liveAudit}
-          </a>
-          <a
-            href="#proof"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            {t.footer.privacy}
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenLegal('contact')}
+            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
-            {t.nav.proof}
-          </a>
-          <a
-            href="#faq"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
-          >
-            {t.nav.faq}
-          </a>
-          <a
-            href="#waitlist"
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
-          >
-            {t.footer.earlyAccess}
-          </a>
+            {t.footer.contact}
+          </button>
           <LanguageToggle
             locale={locale}
             onChangeLocale={onChangeLocale}

@@ -1,4 +1,12 @@
-import type { BuilderTool, FindingCategory, FindingSeverity } from '../types/qa';
+import type {
+  BuilderTool,
+  DatabaseTool,
+  FindingCategory,
+  FindingSeverity,
+  MonthlyBudget,
+  PricingPlanId,
+  UserScale,
+} from '../types/qa';
 
 export type Locale = 'fr' | 'en';
 
@@ -18,9 +26,10 @@ export interface SiteTranslations {
   nav: {
     primaryAria: string;
     mobileAria: string;
+    problem: string;
     howItWorks: string;
     liveAudit: string;
-    proof: string;
+    pricing: string;
     faq: string;
     cta: string;
     openMenu: string;
@@ -41,19 +50,21 @@ export interface SiteTranslations {
     subheadline: string;
     emailLabel: string;
     emailPlaceholder: string;
-    builderLabel: string;
-    builderAria: string;
+    gdprLabelPrefix: string;
+    gdprPrivacyLink: string;
+    gdprLabelSuffix: string;
     submit: string;
     submitting: string;
     reassurance: string;
     jumpToAudit: string;
     emailError: string;
+    gdprError: string;
     fallbackError: string;
     confirmedAlready: string;
     confirmedNew: string;
-    savedPrefix: string;
-    savedMiddle: string;
-    savedSuffix: string;
+    welcomeEmailNotice: string;
+    nextStepsLine: string;
+    completeStep2Cta: string;
     registerAnother: string;
     workbenchAria: string;
     highRisk: string;
@@ -66,7 +77,21 @@ export interface SiteTranslations {
       message: string;
       location: string;
     }>;
-    outcomes: Array<{
+  };
+  problemSolution: {
+    problemHeading: string;
+    problemSubheading: string;
+    fears: Array<{
+      title: string;
+      description: string;
+    }>;
+    solutionHeading: string;
+    solutionSteps: Array<{
+      title: string;
+      description: string;
+    }>;
+    audienceHeading: string;
+    audiences: Array<{
       title: string;
       description: string;
     }>;
@@ -104,6 +129,7 @@ export interface SiteTranslations {
     }>;
   };
   studio: {
+    badge: string;
     heading: string;
     subheading: string;
     tablistAria: string;
@@ -152,6 +178,10 @@ export interface SiteTranslations {
     now: string;
     copiedResponse: string;
     copy: string;
+    copySnippet: string;
+    copiedSnippet: string;
+    codeBlockLabel: string;
+    enterToSendHint: string;
     preparingChecks: string;
     retryMessage: string;
     chatPlaceholderPrefix: string;
@@ -182,17 +212,26 @@ export interface SiteTranslations {
       auditComplete: (status: string, count: number) => string;
     };
   };
-  proofFaq: {
-    proofHeading: string;
-    proofSubheading: string;
-    caseStudies: Array<{
+  proofPricingFaq: {
+    trustHeading: string;
+    trustSubheading: string;
+    trustCards: Array<{
+      title: string;
       metric: string;
-      timeframe: string;
-      quote: string;
+      detail: string;
+    }>;
+    pricingHeading: string;
+    pricingSubheading: string;
+    pricingDisclaimer: string;
+    pricingPlans: Array<{
+      id: PricingPlanId;
       name: string;
-      role: string;
-      company: string;
-      stack: string;
+      priceRange: string;
+      cadence: string;
+      description: string;
+      bullets: string[];
+      cta: string;
+      ctaRecorded: string;
     }>;
     faqHeading: string;
     faqItems: Array<{
@@ -200,56 +239,96 @@ export interface SiteTranslations {
       answer: string;
     }>;
   };
-  waitlist: {
+  funnel: {
     heading: string;
     subheading: string;
     benefitsLead: string;
     benefitsBody: string;
     countLabel: (count: number) => string;
-    confirmedTitleAlready: string;
-    confirmedTitleNew: string;
-    confirmedBodyPrefix: string;
-    confirmedBodyMiddle: string;
-    confirmedBodySuffix: string;
-    registeredOn: string;
-    registerAnother: string;
+    step1Title: string;
     emailLabel: string;
     emailPlaceholder: string;
+    gdprLabelPrefix: string;
+    gdprPrivacyLink: string;
+    gdprLabelSuffix: string;
+    step1Submit: string;
+    step1Submitting: string;
+    emailError: string;
+    gdprError: string;
+    fallbackError: string;
+    confirmedTitleAlready: string;
+    confirmedTitleNew: string;
+    confirmedSubtitle: string;
+    welcomeEmailNotice: string;
+    shareTitle: string;
+    shareX: string;
+    shareLinkedIn: string;
+    shareCopy: string;
+    shareCopied: string;
+    shareText: string;
+    step2Badge: string;
+    step2Title: string;
+    step2Subtitle: string;
     builderLabel: string;
+    databaseLabel: string;
+    databaseOptions: Array<{ value: DatabaseTool; label: string }>;
+    usersLabel: string;
+    usersOptions: Array<{ value: UserScale; label: string }>;
+    painLabel: string;
+    painPoints: string[];
+    planLabel: string;
+    planOptions: Array<{ value: PricingPlanId; label: string }>;
+    budgetLabel: string;
+    budgetOptions: Array<{ value: MonthlyBudget; label: string }>;
     urlLabel: string;
     urlPlaceholder: string;
-    painLegend: string;
-    painPoints: string[];
-    noSpam: string;
-    submit: string;
-    submitting: string;
-    emailError: string;
+    ownershipCheckbox: string;
+    ownershipError: string;
     urlError: string;
-    fallbackError: string;
+    interviewCheckbox: string;
+    step2Submit: string;
+    step2Submitting: string;
+    step2SavedTitle: string;
+    step2SavedSubtitle: string;
+    editStep2: string;
+    registerAnother: string;
   };
   footer: {
     tagline: string;
-    earlyAccess: string;
+    legal: string;
+    privacy: string;
+    contact: string;
     copyright: string;
+  };
+  legalModals: {
+    close: string;
+    legalTitle: string;
+    legalBody: string[];
+    privacyTitle: string;
+    privacyBody: string[];
+    contactTitle: string;
+    contactBody: string[];
+    contactEmail: string;
   };
 }
 
 export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
   fr: {
     meta: {
-      title: 'Proofline — QA & Sécurité continue pour vos apps créées par IA',
+      title: 'Proofline — Ton app générée par IA est-elle vraiment sûre ?',
       description:
-        'Tests automatisés, vérification de sécurité et correctifs en langage clair pour les applications créées avec Lovable, Bolt, Cursor, Replit et v0.',
+        'Reçois en 5 minutes un audit de sécurité passif gratuit pour ton app Lovable, Bolt, Cursor, Replit ou v0 : clés exposées, base de données ouverte, parcours cassés. Sans jargon.',
     },
     skipLink: 'Aller au contenu principal',
     nav: {
       primaryAria: 'Navigation principale',
       mobileAria: 'Navigation mobile',
+      problem: 'Problème',
       howItWorks: 'Fonctionnement',
-      liveAudit: 'Audit en direct',
-      proof: 'Résultats',
+      liveAudit: 'Démo',
+      pricing: 'Tarifs',
       faq: 'FAQ',
-      cta: 'Accès anticipé',
+      cta: 'Audit gratuit',
       openMenu: 'Ouvrir le menu de navigation',
       closeMenu: 'Fermer le menu de navigation',
       appearance: 'Apparence',
@@ -264,81 +343,119 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       groupLabel: 'Langue du site',
     },
     hero: {
-      headline: 'Livrez des apps créées par IA qui ne cassent ni ne fuient.',
+      headline: 'Ton app générée par IA est-elle vraiment sûre ?',
       subheadline:
-        'Le code généré en quelques minutes reste fragile en production. Proofline vérifie en continu vos parcours Lovable, Bolt, Cursor et Replit pour repérer les clés exposées, tables ouvertes et écrans cassés avant vos utilisateurs.',
-      emailLabel: 'Adresse e-mail professionnelle ou personnelle',
-      emailPlaceholder: 'vous@votrestartup.com',
-      builderLabel: 'Outil utilisé',
-      builderAria: 'Outil IA utilisé pour créer votre application',
-      submit: 'Accès anticipé',
-      submitting: 'Inscription...',
-      reassurance: 'Aucune conservation du code · Gratuit pendant la bêta',
-      jumpToAudit: 'Tester l’audit de capture en direct',
-      emailError: 'Saisissez une adresse e-mail valide pour recevoir votre invitation.',
-      fallbackError: 'Impossible d’enregistrer votre inscription pour le moment. Réessayez.',
-      confirmedAlready: 'Vous êtes déjà sur la liste d’accès anticipé Proofline.',
-      confirmedNew: 'Vous êtes inscrit sur la liste d’accès anticipé.',
-      savedPrefix: 'Nous avons enregistré',
-      savedMiddle: 'pour la bêta',
-      savedSuffix: '.',
+        'Modifie ton app avec l’IA sans peur. Reçois en 5 minutes un audit gratuit de sécurité : clés exposées, base de données ouverte, accès non protégés. Explications claires, sans jargon.',
+      emailLabel: 'Ton adresse e-mail',
+      emailPlaceholder: 'toi@tonprojet.com',
+      gdprLabelPrefix: 'J’accepte de recevoir des informations sur ce produit et que mes données soient traitées selon la',
+      gdprPrivacyLink: 'politique de confidentialité',
+      gdprLabelSuffix: '. Je peux me désinscrire à tout moment.',
+      submit: 'Recevoir mon audit gratuit',
+      submitting: 'Envoi...',
+      reassurance: 'Gratuit · Sans carte bancaire · Tests passifs uniquement',
+      jumpToAudit: 'Essayer l’audit de capture en direct',
+      emailError: 'Saisis une adresse e-mail valide pour recevoir ton audit.',
+      gdprError: 'Coche l’accord de confidentialité ci-dessus pour continuer.',
+      fallbackError: 'Impossible d’enregistrer ton inscription pour le moment.',
+      confirmedAlready: 'Tu es déjà inscrit pour recevoir ton audit gratuit.',
+      confirmedNew: 'Ton audit gratuit est en route !',
+      welcomeEmailNotice: 'Un e-mail de confirmation t’a été envoyé.',
+      nextStepsLine: 'Prochaine étape : précise ton outil et l’URL de ton app (optionnel, 30 secondes) pour prioriser ton audit.',
+      completeStep2Cta: 'Compléter mes infos d’audit (étape 2)',
       registerAnother: 'Inscrire une autre adresse',
-      workbenchAria: 'Exemple de rapport de vérification Proofline',
-      highRisk: 'Risque élevé',
-      runLiveCheck: 'Lancer un audit',
-      promptHeader: 'Prompt correctif généré · À coller dans Bolt',
+      workbenchAria: 'Aperçu d’un rapport d’audit Proofline',
+      highRisk: 'Risque critique',
+      runLiveCheck: 'Tester sur une capture',
+      promptHeader: 'Action recommandée · À coller dans Bolt',
       promptBody:
-        '« Déplacez les clés secrètes Stripe dans une route serveur /api/checkout et activez les règles RLS sur public.users avant de renvoyer des lignes clients. »',
+        '« Déplace les clés secrètes Stripe dans une route serveur /api/checkout et active les règles RLS sur public.users avant de renvoyer des lignes clients. »',
       checks: [
         {
           severity: 'Critical',
-          area: 'Fuite de secret',
-          message: 'STRIPE_SECRET présent dans le bundle client JS',
+          area: 'Clé secrète exposée',
+          message: 'STRIPE_SECRET détectée dans le code JavaScript du navigateur',
           location: 'CheckoutForm.tsx:142',
         },
         {
           severity: 'Critical',
-          area: 'Contrôle d’accès',
-          message: 'public.users renvoie 1 482 lignes sans authentification',
+          area: 'Base de données ouverte',
+          message: 'La table users renvoie 1 482 lignes sans être connecté',
           location: 'RLS_ENABLED=false',
         },
         {
           severity: 'Warning',
-          area: 'Parcours cassé · 390px',
-          message: 'Le bouton principal Payer dépasse hors de la modale mobile',
+          area: 'Parcours mobile · 390px',
+          message: 'Le bouton Payer sort de l’écran sur téléphone après modification',
           location: 'mobile-checkout',
         },
       ],
-      outcomes: [
+    },
+    problemSolution: {
+      problemHeading: 'Tu livres vite. Mais est-ce que tout tient vraiment en production ?',
+      problemSubheading:
+        'Les outils comme Lovable, Bolt, Cursor et Replit génèrent une app en quelques heures—sans vérifier ce qui reste ouvert ou ce qui casse après coup.',
+      fears: [
         {
-          title: 'Chaque parcours vérifié',
+          title: 'Tu modifies ton app avec l’IA… et quelque chose casse sans que tu le saches.',
           description:
-            'Inscriptions, paiements et formulaires sont testés dans de vrais navigateurs après chaque modification.',
+            'Corriger un texte ou un bouton sur la page d’accueil peut bloquer l’inscription ou le paiement Stripe sans aucun message d’erreur visible.',
         },
         {
-          title: 'Rien n’est laissé exposé',
+          title: 'Tes clés API et ta base de données sont-elles visibles par n’importe qui ?',
           description:
-            'Détecte automatiquement les clés API publiques, tables Supabase ouvertes et routes sans authentification.',
+            'Sans règles d’accès strictes (RLS Supabase ou règles Firebase), n’importe quel visiteur curieux peut lire les données de tes utilisateurs.',
         },
         {
-          title: 'Correctifs en langage clair',
+          title: 'Tu n’as pas de développeur pour vérifier.',
           description:
-            'Obtenez des prompts prêts à coller dans Lovable, Bolt ou Cursor, sans toucher au terminal.',
+            'Lire des traces TypeScript ou auditer les requêtes réseau demande un œil technique que tu ne devrais pas avoir à embaucher pour chaque mise à jour.',
+        },
+      ],
+      solutionHeading: 'Comment ça marche en 3 étapes',
+      solutionSteps: [
+        {
+          title: '1. Tu nous indiques ton app',
+          description:
+            'Renseigne ton lien de prévisualisation (en certifiant en être propriétaire) ou dépose une capture d’écran.',
         },
         {
-          title: 'Mise en place en 2 minutes',
+          title: '2. Nous effectuons des vérifications passives',
           description:
-            'Connectez un lien de prévisualisation ou un dépôt. Proofline cartographie et protège vos routes en continu.',
+            'Contrôles non destructeurs des clés exposées, règles d’accès base de données, formulaires et parcours critiques.',
+        },
+        {
+          title: '3. Tu reçois un rapport clair avec les correctifs',
+          description:
+            'Chaque problème est expliqué en français simple avec le prompt exact à coller dans Lovable, Bolt, Cursor ou Replit.',
+        },
+      ],
+      audienceHeading: 'Pour qui ?',
+      audiences: [
+        {
+          title: 'Créateurs sur Lovable, Bolt, Replit & Cursor',
+          description:
+            'Tu as déjà de vrais utilisateurs ou premiers clients sur Supabase/Firebase + Stripe et tu veux avancer sans mauvaise surprise.',
+        },
+        {
+          title: 'Freelances livrant des apps IA',
+          description:
+            'Tu veux un contrôle sécurité et qualité rapide avant de remettre l’app à ton client pour éviter les retours urgents.',
+        },
+        {
+          title: 'Fondateurs sans équipe technique',
+          description:
+            'Tu fais évoluer ton produit chaque semaine et tu veux savoir immédiatement si une donnée reste exposée.',
         },
       ],
     },
     bento: {
-      heading: 'Les outils IA vont vite. Les régressions silencieuses encore plus.',
+      heading: 'Ce que nous détectons sur ton application.',
       subheading:
-        'Corriger un bouton sur votre page tarifaire ne devrait ni casser vos webhooks Stripe ni exposer votre table utilisateurs. Proofline surveille chaque changement avec la rigueur d’une équipe QA.',
-      flowTitle: 'Vérification continue des parcours',
+        'Des vérifications ciblées sur les failles les plus fréquentes des applications générées par IA, avec des actions concrètes.',
+      flowTitle: 'Parcours critiques cassés',
       flowDesc:
-        'À chaque régénération d’écran ou mise à jour, de vrais navigateurs parcourent création de compte, connexion, formulaires et paiement sur ordinateur et mobile. Si un bouton ne répond plus ou qu’une redirection boucle, vous êtes alerté en moins de 90 secondes.',
+        'Création de compte, connexion, formulaires et paiement Stripe vérifiés sur ordinateur et mobile pour détecter un bouton mort ou une redirection bloquée.',
       flowSteps: [
         {
           step: 'Inscription (/signup)',
@@ -348,8 +465,8 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         },
         {
           step: 'Vérification session',
-          desktop: 'JWT scopé',
-          mobile: 'JWT scopé',
+          desktop: 'JWT isolé',
+          mobile: 'JWT isolé',
           status: 'pass',
         },
         {
@@ -359,27 +476,27 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           status: 'warn',
         },
       ],
-      guardTitle: 'Protection secrets & expositions',
+      guardTitle: 'Expositions & données sensibles',
       guardDesc:
-        'Les générateurs IA publient souvent des clés API côté client, des règles de base trop permissives ou des endpoints admin non protégés. Proofline analyse votre build et le trafic réseau pour garder vos données privées.',
+        'Repérage des clés API publiques dans le bundle client, tables Supabase/Firebase sans règles RLS, données d’autres utilisateurs accessibles et formulaires sans protection.',
       guardItems: [
-        { label: 'Scan de clés dans le bundle client', tag: 'Chaque déploiement' },
-        { label: 'Contrôle d’accès par ligne (RLS)', tag: 'Supabase & Firebase' },
-        { label: 'Test des routes sans session', tag: 'API & webhooks' },
+        { label: 'Clés API dans le code navigateur', tag: 'Client JS' },
+        { label: 'Règles d’accès base de données', tag: 'Supabase & Firebase' },
+        { label: 'Données croisées & routes ouvertes', tag: 'Auth & API' },
       ],
-      promptTitle: 'Correctifs en un seul prompt',
+      promptTitle: 'Correctifs expliqués sans jargon',
       promptDesc:
-        'Inutile de déchiffrer des en-têtes CORS ou des traces TypeScript. Chaque anomalie est expliquée simplement avec un prompt testé, prêt à coller dans Lovable, Bolt ou Cursor.',
-      samplePromptLabel: 'Exemple de prompt correctif généré',
+        'Chaque anomalie détectée s’accompagne de son niveau de gravité, de son impact concret pour tes utilisateurs et d’un prompt correctif prêt à coller.',
+      samplePromptLabel: 'Exemple de prompt correctif',
       samplePromptBody:
-        '« Déplacez l’appel secret Stripe dans une route serveur /api/checkout et exigez une session authentifiée avant de renvoyer les factures clients. »',
-      shieldTitle: 'Bouclier anti-régression avant lancement',
+        '« Déplace l’appel secret Stripe dans une route serveur /api/checkout et exige une session authentifiée avant de renvoyer les factures clients. »',
+      shieldTitle: 'Comparaison avant / après modification',
       shieldDesc:
-        'Comparez chaque nouvelle prévisualisation à votre dernière version fonctionnelle. Proofline isole les mises en page cassées, variables d’environnement manquantes et appels API morts avant le partage public.',
+        'Vérification de non-régression entre ta version fonctionnelle et ton dernier aperçu : variables d’environnement oubliées, dépendances vulnérables ou appels API en erreur.',
       shieldDiffs: [
         {
           check: 'Redirection auth (/dashboard)',
-          baselineLabel: 'Dernier OK',
+          baselineLabel: 'Version OK',
           baseline: '200 OK',
           previewLabel: 'Aperçu',
           preview: '200 OK',
@@ -387,15 +504,15 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         },
         {
           check: 'POST /api/checkout',
-          baselineLabel: 'Dernier OK',
+          baselineLabel: 'Version OK',
           baseline: '200 OK',
           previewLabel: 'Aperçu',
           preview: '500 · STRIPE_WEBHOOK_SECRET manquant',
           status: 'fail',
         },
         {
-          check: 'Scan du bundle public',
-          baselineLabel: 'Dernier OK',
+          check: 'Dépendances & bundle public',
+          baselineLabel: 'Version OK',
           baseline: '0 secret',
           previewLabel: 'Aperçu',
           preview: '0 secret',
@@ -404,35 +521,36 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       ],
     },
     studio: {
-      heading: 'Lancez un audit en direct sur votre application.',
+      badge: 'Démo interactive',
+      heading: 'Teste dès maintenant l’audit sur une capture d’écran.',
       subheading:
-        'Importez ou collez une capture d’écran depuis Lovable, Bolt ou Cursor pour repérer les expositions visibles et défauts d’interface — ou discutez avec notre conseiller QA.',
-      tablistAria: 'Modes du studio QA en direct',
+        'Dépose ou colle une capture de ton app Lovable, Bolt ou Cursor (dont tu es propriétaire) pour voir un exemple d’analyse immédiate — ou pose une question au conseiller.',
+      tablistAria: 'Modes du studio de démonstration',
       tabScreenshot: 'Audit de capture',
       tabChat: 'Conseiller QA & Sécurité',
-      uploadLabel: 'Capture d’écran de l’application',
+      uploadLabel: 'Capture d’écran de ton application',
       loadDemo: 'Charger une capture de démo',
       remove: 'Retirer',
-      dropTitle: 'Déposez, parcourez ou collez une capture (Ctrl+V)',
+      dropTitle: 'Dépose, parcours ou colle une capture (Ctrl+V)',
       dropHint:
-        'PNG, JPEG ou WebP jusqu’à 8 Mo · Masquez vos données clients réelles · Analysée en mémoire, jamais stockée',
-      uploadedAltFallback: 'Capture d’écran de l’application importée',
+        'PNG, JPEG ou WebP jusqu’à 8 Mo · Uniquement tes propres apps, masque tes données clients · Analyse en mémoire non stockée',
+      uploadedAltFallback: 'Capture d’écran importée',
       replace: 'Remplacer',
       builtWith: 'Créé avec',
       focusArea: 'Zone à vérifier (optionnel)',
       focusPlaceholder: 'ex. Écran auth ou paiement',
-      runAudit: 'Lancer l’audit QA & Sécurité',
-      inspecting: 'Analyse de la capture...',
-      checkingTitle: 'Vérification des parcours, de la mise en page et des expositions visibles',
-      checkingSubtitlePrefix: 'Inspection de votre capture',
-      checkingSubtitleSuffix: 'et rédaction des prompts correctifs prêts à coller...',
-      emptyTitle: 'Votre rapport de diagnostic apparaîtra ici',
-      emptyDescBefore: 'Importez une capture d’écran de connexion, tableau de bord ou paiement — ou cliquez sur',
+      runAudit: 'Lancer l’audit sur la capture',
+      inspecting: 'Analyse en cours...',
+      checkingTitle: 'Recherche d’expositions visibles, défauts de parcours et problèmes d’interface',
+      checkingSubtitlePrefix: 'Inspection de ta capture',
+      checkingSubtitleSuffix: 'et rédaction des prompts correctifs...',
+      emptyTitle: 'Le rapport de diagnostic apparaîtra ici',
+      emptyDescBefore: 'Importe une capture de connexion, tableau de bord ou paiement — ou clique sur',
       emptyDescAfter:
-        'pour voir comment Proofline détecte les risques cachés et rédige des correctifs prêts à coller.',
-      findingSingular: 'anomalie',
-      findingPlural: 'anomalies',
-      auditSummary: 'Résumé de l’audit',
+        'pour voir comment Proofline explique les risques sans jargon.',
+      findingSingular: 'constat',
+      findingPlural: 'constats',
+      auditSummary: 'Résumé du diagnostic',
       copyAllFixes: 'Copier tous les correctifs',
       copiedAllFixes: 'Tous copiés',
       askAdvisor: 'Demander au conseiller',
@@ -441,8 +559,8 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       copied: 'Copié',
       severityLabels: {
         Critical: 'Critique',
-        Warning: 'Avertissement',
-        Suggestion: 'Suggestion',
+        Warning: 'Attention',
+        Suggestion: 'Amélioration',
       },
       categoryLabels: {
         Security: 'Sécurité',
@@ -451,22 +569,26 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         Accessibility: 'Accessibilité',
       },
       readinessLabels: {
-        'Ready to Ship': 'Prêt à livrer',
-        'Needs Fixes': 'Correctifs requis',
-        'High Risk': 'Risque élevé',
+        'Ready to Ship': 'Aucun blocage visible',
+        'Needs Fixes': 'À corriger',
+        'High Risk': 'Exposition critique',
       },
       advisorTitle: 'Conseiller QA & Sécurité',
-      stackContext: 'Outil ciblé :',
-      undoReset: 'Annuler la réinitialisation',
+      stackContext: 'Outil :',
+      undoReset: 'Annuler',
       resetThread: 'Réinitialiser',
-      you: 'Vous',
+      you: 'Toi',
       advisorName: 'Conseiller Proofline',
       now: 'Maintenant',
       copiedResponse: 'Réponse copiée',
       copy: 'Copier',
-      preparingChecks: 'Analyse de votre question et préparation des vérifications...',
+      copySnippet: 'Copier',
+      copiedSnippet: 'Copié',
+      codeBlockLabel: 'Extrait',
+      enterToSendHint: 'Entrée pour envoyer · Maj+Entrée pour une ligne',
+      preparingChecks: 'Analyse de ta question et préparation des vérifications...',
       retryMessage: 'Réessayer',
-      chatPlaceholderPrefix: 'Posez une question QA, auth ou sécurité sur votre app',
+      chatPlaceholderPrefix: 'Pose une question sécurité ou QA sur ton app',
       chatPlaceholderSuffix: '...',
       chatInputAria: 'Poser une question QA ou sécurité au conseiller Proofline',
       send: 'Envoyer',
@@ -476,148 +598,261 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         'Quels 5 contrôles faire avant d’encaisser de vrais paiements Stripe sur un MVP Cursor ?',
       ],
       welcomeMessage:
-        'Interrogez-moi sur n’importe quel parcours fragile, bug d’authentification ou exposition potentielle dans votre app Lovable, Bolt, Cursor ou Replit. Je vous indique quoi vérifier et rédige un prompt correctif prêt à coller.',
+        'Pose-moi une question sur un parcours fragile, une règle d’accès Supabase/Firebase ou un bug sur ton app Lovable, Bolt, Cursor ou Replit. Je t’indique quoi vérifier et comment le corriger simplement.',
       resetMessage:
-        'Conversation réinitialisée. Posez votre question sur les tests, la sécurité ou la correction de votre application.',
+        'Conversation réinitialisée. Pose ta question sur la sécurité ou la fiabilité de ton application.',
       demoFocusDefault: 'Vérifier les secrets exposés, le paiement mobile cassé et les fuites de données.',
       askAdvisorPrefix: 'Dans mon app',
-      askAdvisorMiddle: ', Proofline a signalé',
-      askAdvisorSuffix: 'Comment vérifier ce correctif en toute sécurité ?',
+      askAdvisorMiddle: ', le diagnostic a signalé',
+      askAdvisorSuffix: 'Comment vérifier ce correctif sans tout casser ?',
       errors: {
-        invalidFileType: 'Veuillez sélectionner une image PNG, JPEG ou WebP.',
-        fileTooLarge: 'La capture d’écran doit faire moins de 8 Mo.',
-        fileReadError: 'Impossible de lire le fichier image sélectionné.',
-        demoFailed: 'Impossible de générer la capture de démonstration dans ce navigateur.',
-        noScreenshot: 'Importez une capture ou chargez la capture de démo d’abord.',
+        invalidFileType: 'Sélectionne une image PNG, JPEG ou WebP.',
+        fileTooLarge: 'La capture doit faire moins de 8 Mo.',
+        fileReadError: 'Impossible de lire le fichier image.',
+        demoFailed: 'Impossible de générer la capture de démo dans ce navigateur.',
+        noScreenshot: 'Importe une capture ou charge la capture de démo d’abord.',
         auditFailed: 'Impossible de finaliser l’audit de la capture.',
         chatFailed: 'Impossible de joindre le conseiller QA pour le moment.',
       },
       announcements: {
         screenshotLoaded: 'Capture chargée et prête pour l’audit.',
-        demoLoaded: 'Capture d’application de démonstration chargée.',
-        screenshotRemoved: 'Capture supprimée.',
+        demoLoaded: 'Capture de démonstration chargée.',
+        screenshotRemoved: 'Capture retirée.',
         copied: 'Copié dans le presse-papiers.',
         auditComplete: (status, count) =>
-          `Audit terminé : ${status}, ${count} ${count === 1 ? 'anomalie' : 'anomalies'}.`,
+          `Audit terminé : ${status}, ${count} ${count === 1 ? 'constat' : 'constats'}.`,
       },
     },
-    proofFaq: {
-      proofHeading: 'Conçu pour des créateurs qui lancent de vrais produits, pas des démos.',
-      proofSubheading:
-        'Retours mesurés auprès de notre cohorte pilote sur des lancements Lovable, Bolt et Cursor.',
-      caseStudies: [
+    proofPricingFaq: {
+      trustHeading: 'Transparence et confidentialité avant tout.',
+      trustSubheading:
+        'Proofline est actuellement en phase de validation avec ses premiers utilisateurs. Aucun faux témoignage : voici nos engagements concrets.',
+      trustCards: [
         {
-          metric: '1 420 inscriptions le 1er jour, 0 échec de paiement',
-          timeframe: 'Détecté 4 h avant le lancement',
-          quote:
-            'Avant Proofline, chaque nouveau prompt ressemblait à de la roulette russe. Il a repéré deux tables Supabase ouvertes et un bouton de paiement cassé sur Safari juste avant notre lancement, avec le prompt exact pour tout corriger en cinq minutes.',
-          name: 'Maya Lin',
-          role: 'Fondatrice',
-          company: 'HearthLedger',
-          stack: 'Créé avec Lovable',
+          title: 'Vérifications passives uniquement',
+          metric: 'Zéro test intrusif',
+          detail:
+            'Nous n’auditons que les applications dont tu certifies être propriétaire. Aucun test destructif ni surcharge sur ton serveur.',
         },
         {
-          metric: 'De 6 déploiements cassés/semaine à 0',
-          timeframe: 'Mesuré sur 30 jours',
-          quote:
-            'Je suis designer, pas ingénieur QA. Proofline vérifie automatiquement mon onboarding et ma facturation après chaque modification : je ne découvre plus les bugs via des clients mécontents.',
-          name: 'Devon Park',
-          role: 'Créateur solo',
-          company: 'ClipBrief',
-          stack: 'Créé avec Bolt',
+          title: 'Respect strict de ton code',
+          metric: 'Aucune conservation',
+          detail:
+            'Les captures et vérifications sont traitées de manière isolée et jamais partagées ni réutilisées pour entraîner un modèle.',
         },
         {
-          metric: '9 h/semaine de tests manuels économisées',
-          timeframe: 'Sur 18 parcours clés',
-          quote:
-            'Notre équipe de deux personnes déploie chaque jour avec Cursor. Savoir en continu que rien n’a cassé et qu’aucun secret d’environnement n’a fuité nous permet d’avancer vite sereinement.',
-          name: 'Hannah Morales',
-          role: 'Co-fondatrice',
-          company: 'RosterKit',
-          stack: 'Créé avec Cursor',
+          title: 'Contrôles adaptés aux stacks IA',
+          metric: 'Lovable · Bolt · Cursor · Replit',
+          detail:
+            'Chaque audit cible les erreurs fréquentes des générateurs IA : clés client exposées, règles Supabase/Firebase trop larges, formulaires ouverts et paiements Stripe.',
         },
       ],
-      faqHeading: 'Des réponses claires avant de connecter votre application.',
+      pricingHeading: 'Tarifs indicatifs envisagés',
+      pricingSubheading:
+        'Ces formules sont en cours de test pour orienter le produit : cliquer sur « Ça m’intéresse » enregistre simplement ton intérêt, sans aucun paiement.',
+      pricingDisclaimer: 'Montants indicatifs à l’étude — aucun paiement demandé pendant la bêta.',
+      pricingPlans: [
+        {
+          id: 'one-time',
+          name: 'Audit unique',
+          priceRange: '19 – 49 €',
+          cadence: 'ponctuel',
+          description: 'Idéal avant un lancement Product Hunt, une démo client ou l’ouverture des paiements.',
+          bullets: [
+            'Contrôle complet des clés et règles d’accès',
+            'Test des parcours connexion et paiement',
+            'Rapport clair + prompts correctifs prêts à coller',
+          ],
+          cta: 'Ça m’intéresse',
+          ctaRecorded: 'Intérêt enregistré ✓',
+        },
+        {
+          id: 'monthly',
+          name: 'Suivi mensuel',
+          priceRange: '29 – 49 €',
+          cadence: '/ mois',
+          description: 'Pour les créateurs qui publient chaque semaine et veulent éviter les régressions silencieuses.',
+          bullets: [
+            'Vérifications automatiques après modification',
+            'Alertes immédiates en cas de fuite ou panne',
+            'Historique avant / après chaque mise à jour',
+          ],
+          cta: 'Ça m’intéresse',
+          ctaRecorded: 'Intérêt enregistré ✓',
+        },
+        {
+          id: 'agency',
+          name: 'Équipe / agence',
+          priceRange: '99 €+',
+          cadence: '/ mois',
+          description: 'Pensé pour les freelances et petites équipes qui livrent plusieurs apps IA à des clients.',
+          bullets: [
+            'Multi-projets pour tes clients',
+            'Rapports partageables avant livraison',
+            'Contrôles prioritaires sur plusieurs environnements',
+          ],
+          cta: 'Ça m’intéresse',
+          ctaRecorded: 'Intérêt enregistré ✓',
+        },
+      ],
+      faqHeading: 'Questions fréquentes',
       faqItems: [
         {
-          question: 'Dois-je savoir écrire des tests automatisés ou lire du code ?',
+          question: 'Mon code est-il en sécurité chez vous ?',
           answer:
-            'Non. Indiquez votre URL de prévisualisation ou connectez votre dépôt : Proofline cartographie vos écrans principaux, les teste dans de vrais navigateurs et explique chaque anomalie en français clair avec un prompt correctif prêt à coller.',
+            'Oui. Les audits passifs analysent uniquement le comportement public de ton aperçu ou les captures fournies, sans conserver ton code source ni partager tes données avec des tiers.',
         },
         {
-          question: 'Quels outils de création IA sont pris en charge par Proofline ?',
+          question: 'Avez-vous besoin d’un accès à mon app ?',
           answer:
-            'Proofline fonctionne avec toute application web générée via Lovable, Bolt, Cursor, Replit, v0 ou un stack personnalisé. Comme nous vérifions à la fois le comportement navigateur et les frontières réseau/sécurité déployées, vous n’avez rien à modifier.',
+            'Pas nécessairement pour démarrer : l’URL publique de prévisualisation (avec ta confirmation de propriété) suffit pour détecter les clés exposées, règles d’accès ouvertes et parcours cassés.',
         },
         {
-          question: 'Quels types d’expositions de sécurité vérifiez-vous ?',
+          question: 'Est-ce que ça marche avec Lovable, Bolt, Replit et Cursor ?',
           answer:
-            'Nous recherchons les clés API exposées par erreur dans le bundle client, les règles Supabase ou Firebase trop permissives, les routes API non authentifiées, les signatures webhook manquantes et les panneaux de debug laissés en production.',
+            'Oui. Proofline est conçu pour les applications générées avec Lovable, Bolt, Replit, Cursor et v0, notamment lorsqu’elles utilisent Supabase, Firebase ou Stripe.',
         },
         {
-          question: 'Comment fonctionne l’accès anticipé et quel est le tarif ?',
+          question: 'Quand sera-t-il disponible ?',
           answer:
-            'Nous intégrons nos partenaires pilotes par cohortes hebdomadaires. Les membres en accès anticipé bénéficient gratuitement des tests automatisés et contrôles de sécurité pendant la bêta, avec un tarif fondateur garanti au lancement.',
+            'Nous réalisons actuellement les premiers audits manuels et assistés avec les inscrits de la liste prioritaire afin d’ajuster le produit à tes besoins réels.',
+        },
+        {
+          question: 'Combien ça coûtera ?',
+          answer:
+            'Pendant cette phase de validation, ton premier audit est gratuit. Les formules indicatives vont d’environ 19–49 € pour un audit ponctuel à 29–49 €/mois pour un suivi continu, selon tes retours.',
         },
       ],
     },
-    waitlist: {
-      heading: 'Vérifiez tout avant votre prochain lancement.',
+    funnel: {
+      heading: 'Reçois ton audit gratuit de sécurité.',
       subheading:
-        'Réservez votre place pour les tests automatisés, la vérification de sécurité et les correctifs en un prompt. Partagez votre projet pour être prioritaire si vous lancez sous 30 jours.',
-      benefitsLead: 'Ce que reçoivent les premiers membres :',
+        'Un e-mail suffit pour démarrer. Tu pourras ensuite, si tu le souhaites, nous indiquer ton outil, ta formule préférée ou le lien de ton application.',
+      benefitsLead: 'Ce que tu obtiens :',
       benefitsBody:
-        'contrôles illimités de prévisualisation pendant la bêta, détection en direct des secrets et règles de base de données, et accompagnement direct avec l’équipe fondatrice.',
+        'un contrôle passif de ton app (clés exposées, base de données ouverte, parcours cassés) et des explications claires sans jargon.',
       countLabel: (count) =>
-        `${count} ${count === 1 ? 'créateur a' : 'créateurs ont'} déjà demandé l’accès anticipé depuis cet espace.`,
-      confirmedTitleAlready: 'Votre place en accès anticipé est confirmée.',
-      confirmedTitleNew: 'Bienvenue sur la liste d’attente Proofline.',
-      confirmedBodyPrefix: 'Nous avons bien enregistré',
-      confirmedBodyMiddle: 'avec un accès prioritaire',
-      confirmedBodySuffix: '. Nous vous contacterons dès l’ouverture de votre vague d’invitations.',
-      registeredOn: 'Inscrit le',
-      registerAnother: 'Inscrire un autre e-mail d’équipe',
+        `${count} ${count === 1 ? 'fondateur s’est' : 'fondateurs se sont'} déjà inscrit${count === 1 ? '' : 's'} depuis cet espace.`,
+      step1Title: 'Étape 1 sur 2 — Ton e-mail suffit pour commencer',
       emailLabel: 'Adresse e-mail',
-      emailPlaceholder: 'fondateur@entreprise.com',
-      builderLabel: 'Outil IA principal',
-      urlLabel: 'URL de l’app ou de prévisualisation (optionnel)',
-      urlPlaceholder: 'https://monapp.lovable.app',
-      painLegend: 'Qu’est-ce qui vous inquiète le plus avant de livrer ?',
-      painPoints: [
-        'Parcours qui cassent après de nouveaux prompts',
-        'Clés API exposées ou tables ouvertes',
-        'Bugs d’authentification et Stripe en production',
-        'Défauts d’affichage mobile avant lancement',
-      ],
-      noSpam: 'Zéro spam. Uniquement votre invitation et le suivi de cohorte.',
-      submit: 'Accès anticipé',
-      submitting: 'Envoi...',
+      emailPlaceholder: 'toi@tonprojet.com',
+      gdprLabelPrefix: 'J’accepte de recevoir des informations sur ce produit et que mes données soient traitées selon la',
+      gdprPrivacyLink: 'politique de confidentialité',
+      gdprLabelSuffix: '. Je peux me désinscrire à tout moment.',
+      step1Submit: 'Audite mon app gratuitement',
+      step1Submitting: 'Inscription...',
       emailError: 'Veuillez saisir une adresse e-mail valide.',
-      urlError: 'Veuillez saisir une URL http ou https valide (par exemple monapp.lovable.app).',
-      fallbackError: 'Impossible de finaliser l’inscription. Vérifiez vos informations.',
+      gdprError: 'Veuillez cocher la case d’accord RGPD pour continuer.',
+      fallbackError: 'Impossible de finaliser l’inscription. Réessaie dans un instant.',
+      confirmedTitleAlready: 'Tu es déjà inscrit pour l’audit gratuit.',
+      confirmedTitleNew: 'Ton audit de sécurité est en route !',
+      confirmedSubtitle:
+        'Nous avons bien enregistré ton adresse. Tu peux compléter les questions facultatives ci-dessous pour accélérer ton audit et orienter le produit.',
+      welcomeEmailNotice: 'Un e-mail de bienvenue vient de t’être envoyé.',
+      shareTitle: 'Partager avec d’autres créateurs :',
+      shareX: 'Partager sur X',
+      shareLinkedIn: 'LinkedIn',
+      shareCopy: 'Copier le lien',
+      shareCopied: 'Lien copié',
+      shareText: 'Je viens de demander un audit sécurité gratuit pour mon app IA sur Proofline.',
+      step2Badge: 'Étape 2 (facultative · 30 secondes)',
+      step2Title: 'Aide-nous à personnaliser ton audit gratuit',
+      step2Subtitle:
+        'Chaque réponse est optionnelle mais nous permet de préparer un audit adapté à ta stack et à ton budget.',
+      builderLabel: 'Outil utilisé pour créer ton app',
+      databaseLabel: 'Base de données',
+      databaseOptions: [
+        { value: 'Supabase', label: 'Supabase' },
+        { value: 'Firebase', label: 'Firebase' },
+        { value: 'Other', label: 'Autre' },
+        { value: 'Unknown', label: 'Je ne sais pas' },
+      ],
+      usersLabel: 'Combien d’utilisateurs a ton app ?',
+      usersOptions: [
+        { value: '0', label: '0 (pas encore lancée)' },
+        { value: '1-50', label: '1 – 50 utilisateurs' },
+        { value: '51-500', label: '51 – 500 utilisateurs' },
+        { value: '500+', label: '500+ utilisateurs' },
+      ],
+      painLabel: 'Ta plus grande crainte',
+      painPoints: [
+        'Failles de sécurité',
+        'Bugs après modification',
+        'Perte de données',
+        'Autre',
+      ],
+      planLabel: 'Quelle formule t’intéresse ?',
+      planOptions: [
+        { value: 'one-time', label: 'Audit unique (19–49 €)' },
+        { value: 'monthly', label: 'Suivi mensuel (29–49 €/mois)' },
+        { value: 'agency', label: 'Équipe / agence (99 €+/mois)' },
+      ],
+      budgetLabel: 'Combien paierais-tu par mois pour être tranquille ?',
+      budgetOptions: [
+        { value: '<20', label: 'Moins de 20 €/mois' },
+        { value: '20-49', label: '20 – 49 €/mois' },
+        { value: '50-99', label: '50 – 99 €/mois' },
+        { value: '100+', label: '100 €/mois et plus' },
+      ],
+      urlLabel: 'Lien de ton app pour l’audit gratuit (optionnel)',
+      urlPlaceholder: 'https://monapp.lovable.app',
+      ownershipCheckbox: 'Je certifie être propriétaire de cette application et j’autorise uniquement des vérifications passives non destructrices.',
+      ownershipError: 'Coche la confirmation de propriété pour demander l’audit de ce lien.',
+      urlError: 'Saisis une URL http ou https valide (par exemple monapp.lovable.app).',
+      interviewCheckbox: 'J’accepte un court entretien de 15 minutes pour partager mon retour.',
+      step2Submit: 'Enregistrer mes réponses',
+      step2Submitting: 'Enregistrement...',
+      step2SavedTitle: 'Merci ! Tes préférences d’audit sont enregistrées.',
+      step2SavedSubtitle: 'Nous reviendrons vers toi très vite avec les résultats ou pour planifier ton audit.',
+      editStep2: 'Modifier mes réponses',
+      registerAnother: 'Inscrire une autre adresse e-mail',
     },
     footer: {
       tagline:
-        'Tests continus et vérification de sécurité pour vos apps créées par IA. Les captures sont analysées en mémoire et jamais stockées.',
-      earlyAccess: 'Accès anticipé',
+        'Audit de sécurité et vérification continue pour vos apps Lovable, Bolt, Cursor, Replit et v0.',
+      legal: 'Mentions légales',
+      privacy: 'Politique de confidentialité',
+      contact: 'Contact',
       copyright: '© 2026 Proofline',
+    },
+    legalModals: {
+      close: 'Fermer',
+      legalTitle: 'Mentions légales',
+      legalBody: [
+        'Proofline est un projet de validation porté par une équipe indépendante dédiée à la qualité et à la sécurité des applications générées par IA.',
+        'Hébergement : infrastructure cloud sécurisée HTTPS (Vercel / fournisseur européen ou conforme RGPD).',
+        'Règle éthique d’audit : seules les applications dont le demandeur certifie être propriétaire sont soumises à des vérifications passives et non intrusives.',
+      ],
+      privacyTitle: 'Politique de confidentialité (RGPD)',
+      privacyBody: [
+        'Données collectées : adresse e-mail, réponses facultatives de qualification (outil, base de données, crainte, budget indicatif, URL de l’app) et paramètres UTM de provenance.',
+        'Finalité : envoi de votre audit gratuit, suivi du programme pilote et mesure d’intérêt produit. Aucune revente ni cession de données à des tiers.',
+        'Durée & droits : données conservées au maximum 12 mois après le dernier contact. Tu disposes d’un droit d’accès, de rectification et de suppression immédiate sur simple demande ou via le lien de désinscription.',
+      ],
+      contactTitle: 'Contact & suppression des données',
+      contactBody: [
+        'Une question sur ton audit, un partenariat ou une demande de suppression de tes données RGPD ?',
+        'Écris-nous directement en précisant l’adresse e-mail utilisée lors de ton inscription.',
+      ],
+      contactEmail: 'bonjour@proofline.app',
     },
   },
   en: {
     meta: {
-      title: 'Proofline — Continuous QA & Security for AI-Generated Apps',
+      title: 'Proofline — Is Your AI-Generated App Actually Secure?',
       description:
-        'Automated testing, security verification, and plain-English fixes for apps built with Lovable, Bolt, Cursor, Replit, and v0.',
+        'Get a free 5-minute passive security audit for your Lovable, Bolt, Cursor, Replit, or v0 app: exposed keys, open tables, unprotected endpoints. Clear answers, zero jargon.',
     },
     skipLink: 'Skip to main content',
     nav: {
       primaryAria: 'Primary',
       mobileAria: 'Mobile navigation',
+      problem: 'Problem',
       howItWorks: 'How it works',
-      liveAudit: 'Live Audit',
-      proof: 'Proof',
+      liveAudit: 'Live Demo',
+      pricing: 'Pricing',
       faq: 'FAQ',
-      cta: 'Get Early Access',
+      cta: 'Free Audit',
       openMenu: 'Open navigation menu',
       closeMenu: 'Close navigation menu',
       appearance: 'Appearance',
@@ -632,81 +867,119 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       groupLabel: 'Site language',
     },
     hero: {
-      headline: 'Ship AI-built apps that never break or leak.',
+      headline: 'Is your AI-generated app actually secure?',
       subheadline:
-        'Code generated in minutes is fragile in production. Proofline continuously tests your Lovable, Bolt, Cursor, and Replit flows—catching leaked keys, open tables, and broken screens before real customers hit an error.',
-      emailLabel: 'Work or personal email',
-      emailPlaceholder: 'you@yourstartup.com',
-      builderLabel: 'Built with tool',
-      builderAria: 'Built with AI builder',
-      submit: 'Get Early Access',
-      submitting: 'Joining...',
-      reassurance: 'Zero code retention · Free during beta',
-      jumpToAudit: 'Try the live screenshot audit',
-      emailError: 'Enter a valid email address so we can send your invite.',
+        'Update your app with AI without the fear. Get a free passive security audit in 5 minutes: leaked keys, open databases, unprotected access. Plain English, zero jargon.',
+      emailLabel: 'Your email address',
+      emailPlaceholder: 'you@yourproject.com',
+      gdprLabelPrefix: 'I agree to receive updates about this product and have my data processed under the',
+      gdprPrivacyLink: 'privacy policy',
+      gdprLabelSuffix: '. I can unsubscribe at any time.',
+      submit: 'Get My Free Audit',
+      submitting: 'Submitting...',
+      reassurance: 'Free · No credit card · Passive checks only',
+      jumpToAudit: 'Try the live screenshot demo',
+      emailError: 'Enter a valid email address so we can send your audit.',
+      gdprError: 'Please accept the privacy policy above to continue.',
       fallbackError: 'Could not save your signup right now. Please try again.',
-      confirmedAlready: 'You are already on the Proofline early access list.',
-      confirmedNew: 'You are on the early access list.',
-      savedPrefix: 'We saved',
-      savedMiddle: 'for',
-      savedSuffix: 'beta access.',
+      confirmedAlready: 'You are already registered for a free audit.',
+      confirmedNew: 'Your free security audit is on the way!',
+      welcomeEmailNotice: 'A confirmation email has been sent to your inbox.',
+      nextStepsLine: 'Next step: optionally share your builder stack and app URL (30 seconds) so we can prioritize your audit.',
+      completeStep2Cta: 'Complete audit details (Step 2)',
       registerAnother: 'Register another email',
-      workbenchAria: 'Sample Proofline verification report',
-      highRisk: 'High Risk',
-      runLiveCheck: 'Run live check',
-      promptHeader: 'Generated fix prompt · Paste into Bolt',
+      workbenchAria: 'Sample Proofline audit report',
+      highRisk: 'Critical Risk',
+      runLiveCheck: 'Try on a screenshot',
+      promptHeader: 'Recommended fix · Paste into Bolt',
       promptBody:
         '“Move Stripe secret keys into a server route at /api/checkout and enforce RLS on public.users before returning customer rows.”',
       checks: [
         {
           severity: 'Critical',
-          area: 'Secret Exposure',
-          message: 'STRIPE_SECRET bundled in client JS',
+          area: 'Exposed Secret Key',
+          message: 'STRIPE_SECRET found in client-side browser JS bundle',
           location: 'CheckoutForm.tsx:142',
         },
         {
           severity: 'Critical',
-          area: 'Access Control',
-          message: 'public.users returns 1,482 rows without auth',
+          area: 'Open Database Table',
+          message: 'public.users returns 1,482 rows without authentication',
           location: 'RLS_ENABLED=false',
         },
         {
           severity: 'Warning',
-          area: 'Broken Flow · 390px',
-          message: 'Primary Pay button clips outside modal viewport',
+          area: 'Mobile Flow · 390px',
+          message: 'Primary Pay button clips outside viewport after recent edit',
           location: 'mobile-checkout',
         },
       ],
-      outcomes: [
+    },
+    problemSolution: {
+      problemHeading: 'You ship fast. But does everything hold up in production?',
+      problemSubheading:
+        'Tools like Lovable, Bolt, Cursor, and Replit build working apps in hours—without checking what stays exposed or what breaks silently.',
+      fears: [
         {
-          title: 'Every user flow verified',
+          title: 'You tweak your app with AI… and something breaks without you knowing.',
           description:
-            'Sign-ups, checkouts, and forms run in real browsers after every prompt you ship.',
+            'Changing copy or a pricing button can silently break sign-up or Stripe webhooks with no visible error during quick previews.',
         },
         {
-          title: 'Nothing left exposed',
+          title: 'Are your API keys and database visible to anyone?',
           description:
-            'Flags public API keys, open Supabase tables, and missing auth checks automatically.',
+            'Without strict Supabase RLS or Firebase access rules, any curious visitor can inspect your customer rows from the browser network tab.',
         },
         {
-          title: 'Fixes in plain English',
+          title: 'You don’t have a developer to double-check.',
           description:
-            'Get exact repair prompts to paste back into Lovable, Bolt, or Cursor—no terminal needed.',
+            'Deciphering TypeScript stack traces or auditing network permissions takes engineering time you shouldn’t need on every update.',
+        },
+      ],
+      solutionHeading: 'How it works in 3 steps',
+      solutionSteps: [
+        {
+          title: '1. Point us to your app',
+          description:
+            'Share your preview link (certifying ownership) or drop a screenshot of the screen you want checked.',
         },
         {
-          title: '2-minute onboarding',
+          title: '2. We run passive security & flow checks',
           description:
-            'Connect a preview link or repo. Proofline maps your routes and guards them nonstop.',
+            'Non-destructive checks for leaked keys, database rules, unprotected forms, and critical user paths.',
+        },
+        {
+          title: '3. Get a clear report with plain-English fixes',
+          description:
+            'Every finding is explained simply alongside a copy-ready repair prompt for Lovable, Bolt, Cursor, or Replit.',
+        },
+      ],
+      audienceHeading: 'Who is it for?',
+      audiences: [
+        {
+          title: 'Creators on Lovable, Bolt, Replit & Cursor',
+          description:
+            'You already have real users or paying customers on Supabase/Firebase + Stripe and want to iterate confidently.',
+        },
+        {
+          title: 'Freelancers shipping AI-built apps',
+          description:
+            'You want a fast quality and security sanity check before handing an app over to a client.',
+        },
+        {
+          title: 'Non-technical founders',
+          description:
+            'You ship product updates weekly and want to know right away if customer data is left exposed.',
         },
       ],
     },
     bento: {
-      heading: 'AI tools move fast. Silent regressions move faster.',
+      heading: 'What we detect across your app.',
       subheading:
-        'Fixing a button on your pricing page shouldn’t break Stripe webhooks or expose your user table. Proofline watches every change so non-technical builders ship with engineering rigor.',
-      flowTitle: 'Continuous Flow Verification',
+        'Focused checks targeting the most common security and regression pitfalls in AI-generated web apps.',
+      flowTitle: 'Broken critical flows',
       flowDesc:
-        'Every time you regenerate a screen or merge an edit, headless browsers walk through account creation, login, forms, and checkout across desktop and mobile viewports. If a button stops responding or a redirect loops, you know in under 90 seconds.',
+        'Sign-up, login, forms, and Stripe checkout tested across desktop and mobile so dead buttons or broken redirects never reach customers.',
       flowSteps: [
         { step: 'Sign up (/signup)', desktop: '200 OK · 1.1s', mobile: '200 OK', status: 'pass' },
         { step: 'Verify session', desktop: 'JWT scoped', mobile: 'JWT scoped', status: 'pass' },
@@ -717,23 +990,23 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           status: 'warn',
         },
       ],
-      guardTitle: 'Exposure & Secret Guard',
+      guardTitle: 'Exposures & sensitive data',
       guardDesc:
-        'AI code generators frequently ship client-side API keys, permissive database rules, or unprotected admin endpoints. Proofline scans your live build and network traffic to make sure private data stays private.',
+        'Flags client-side API keys, permissive Supabase/Firebase rules, cross-user data leaks, and unauthenticated API routes or forms.',
       guardItems: [
-        { label: 'Client bundle key scan', tag: 'Every deploy' },
-        { label: 'Row-level access check', tag: 'Supabase & Firebase' },
-        { label: 'Unauthenticated route probe', tag: 'API & webhooks' },
+        { label: 'Client bundle API key scan', tag: 'Browser JS' },
+        { label: 'Database access rules', tag: 'Supabase & Firebase' },
+        { label: 'Cross-user & open routes', tag: 'Auth & API' },
       ],
-      promptTitle: 'One-Prompt Auto-Fixes',
+      promptTitle: 'Jargon-free fix guidance',
       promptDesc:
-        'You shouldn’t need to decipher CORS headers or TypeScript stack traces. Every issue comes with a plain-English explanation and a tested repair prompt ready to paste into Lovable, Bolt, or Cursor.',
-      samplePromptLabel: 'Sample generated repair prompt',
+        'Every issue includes a clear severity rating, why it matters to your users, and a tested repair prompt ready to paste.',
+      samplePromptLabel: 'Sample repair prompt',
       samplePromptBody:
         '“Move the Stripe secret lookup into a server route at /api/checkout and require an authenticated session before returning customer invoice rows.”',
-      shieldTitle: 'Pre-Launch Regression Shield',
+      shieldTitle: 'Pre-launch regression checks',
       shieldDesc:
-        'Compare every new preview build against your last working release. Proofline isolates broken layouts, missing environment variables, and dead API calls before you share your link with investors, Product Hunt, or paying users.',
+        'Compare your latest preview against your last working build to isolate missing env vars, vulnerable dependencies, or broken API calls.',
       shieldDiffs: [
         {
           check: 'Auth redirect (/dashboard)',
@@ -752,7 +1025,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           status: 'fail',
         },
         {
-          check: 'Public bundle scan',
+          check: 'Dependencies & public bundle',
           baselineLabel: 'Last pass',
           baseline: '0 secrets',
           previewLabel: 'Preview',
@@ -762,10 +1035,11 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       ],
     },
     studio: {
-      heading: 'Run a live audit on your app right now.',
+      badge: 'Interactive Demo',
+      heading: 'Try a live screenshot audit right now.',
       subheading:
-        'Upload or paste a screenshot from Lovable, Bolt, or Cursor to catch visible exposures and broken states—or chat with our QA advisor for a tailored pre-launch checklist.',
-      tablistAria: 'Live QA Studio modes',
+        'Upload or paste a screenshot of an app you own from Lovable, Bolt, or Cursor to preview an instant diagnostic—or ask our QA advisor a question.',
+      tablistAria: 'Live Demo Studio modes',
       tabScreenshot: 'Screenshot Audit',
       tabChat: 'QA & Security Advisor',
       uploadLabel: 'App screenshot',
@@ -773,21 +1047,21 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       remove: 'Remove',
       dropTitle: 'Drop, browse, or paste screenshot (Ctrl+V)',
       dropHint:
-        'PNG, JPEG, or WebP up to 8 MB · Crop real customer PII first · Analyzed in memory, never stored',
+        'PNG, JPEG, or WebP up to 8 MB · Only apps you own, crop customer PII · Analyzed in memory, never stored',
       uploadedAltFallback: 'Uploaded application screenshot',
       replace: 'Replace',
       builtWith: 'Built with',
       focusArea: 'Focus area (optional)',
       focusPlaceholder: 'e.g., Auth or checkout',
-      runAudit: 'Run QA & Security Audit',
+      runAudit: 'Run Screenshot Audit',
       inspecting: 'Inspecting screenshot...',
-      checkingTitle: 'Checking flows, layout integrity, and visible exposures',
+      checkingTitle: 'Checking visible exposures, broken flow cues, and layout issues',
       checkingSubtitlePrefix: 'Reviewing your',
       checkingSubtitleSuffix: 'screenshot and drafting copy-ready repair prompts...',
       emptyTitle: 'Your diagnostic report appears here',
       emptyDescBefore: 'Upload a screenshot of any login page, dashboard, or checkout modal—or click',
       emptyDescAfter:
-        'to see how Proofline surfaces hidden risks and writes ready-to-paste fix prompts.',
+        'to see how Proofline explains risks in plain English.',
       findingSingular: 'finding',
       findingPlural: 'findings',
       auditSummary: 'Audit Summary',
@@ -809,19 +1083,23 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         Accessibility: 'Accessibility',
       },
       readinessLabels: {
-        'Ready to Ship': 'Ready to Ship',
+        'Ready to Ship': 'No Visible Blockers',
         'Needs Fixes': 'Needs Fixes',
-        'High Risk': 'High Risk',
+        'High Risk': 'Critical Exposure',
       },
       advisorTitle: 'QA & Security Advisor',
-      stackContext: 'Stack context:',
-      undoReset: 'Undo reset',
+      stackContext: 'Stack:',
+      undoReset: 'Undo',
       resetThread: 'Reset thread',
       you: 'You',
       advisorName: 'Proofline Advisor',
       now: 'Now',
       copiedResponse: 'Copied response',
       copy: 'Copy',
+      copySnippet: 'Copy',
+      copiedSnippet: 'Copied',
+      codeBlockLabel: 'Snippet',
+      enterToSendHint: 'Enter to send · Shift+Enter for a new line',
       preparingChecks: 'Reviewing your question and preparing checks...',
       retryMessage: 'Retry message',
       chatPlaceholderPrefix: 'Ask about testing, auth, or security in your',
@@ -834,7 +1112,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         'What 5 checks should I run before taking real Stripe payments on a Cursor MVP?',
       ],
       welcomeMessage:
-        'Ask me about any fragile flow, auth bug, or potential data exposure in your Lovable, Bolt, Cursor, or Replit app. I can walk you through what to check and write a repair prompt you can paste directly into your builder.',
+        'Ask me about any fragile flow, Supabase/Firebase access rule, or bug in your Lovable, Bolt, Cursor, or Replit app. I can walk you through what to check and write a copy-ready repair prompt.',
       resetMessage:
         'Conversation reset. Ask anything about testing, securing, or fixing your AI-built app.',
       demoFocusDefault: 'Check for exposed secrets, broken checkout layout, and data leaks.',
@@ -859,107 +1137,218 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           `Screenshot audit complete: ${status}, ${count} ${count === 1 ? 'finding' : 'findings'}.`,
       },
     },
-    proofFaq: {
-      proofHeading: 'Built for creators shipping real products, not weekend demos.',
-      proofSubheading:
-        'Verified outcomes from our early design partner cohort across Lovable, Bolt, and Cursor launches.',
-      caseStudies: [
+    proofPricingFaq: {
+      trustHeading: 'Honest standards and privacy by default.',
+      trustSubheading:
+        'Proofline is in early validation with pilot builders. Rather than fabricated testimonials, here are our verifiable commitments.',
+      trustCards: [
         {
-          metric: '1,420 day-one signups, 0 checkout failures',
-          timeframe: 'Caught 4 hours before launch',
-          quote:
-            'Before Proofline, every prompt tweak felt like roulette. It flagged two open Supabase tables and a broken Safari pay button right before our launch morning, and gave me the exact prompt to fix both in five minutes.',
-          name: 'Maya Lin',
-          role: 'Founder',
-          company: 'HearthLedger',
-          stack: 'Built with Lovable',
+          title: 'Passive checks only',
+          metric: 'Non-intrusive',
+          detail:
+            'We only audit applications whose ownership you explicitly certify. No destructive load testing or unauthorized probing.',
         },
         {
-          metric: '6 broken deploys/week reduced to 0',
-          timeframe: 'Measured over 30 days',
-          quote:
-            'I am a designer, not a QA engineer. Proofline checks my onboarding and billing flows automatically after every edit so I stopped discovering bugs through angry customer emails.',
-          name: 'Devon Park',
-          role: 'Solo Creator',
-          company: 'ClipBrief',
-          stack: 'Built with Bolt',
+          title: 'Strict data privacy',
+          metric: 'Zero code retention',
+          detail:
+            'Screenshots and diagnostic checks run in isolated memory and are never sold or used to train third-party models.',
         },
         {
-          metric: '9 hours/week of manual click-testing saved',
-          timeframe: 'Across 18 core user flows',
-          quote:
-            'Our two-person team ships daily with Cursor. Having continuous verification that nothing broke and no environment secret leaked lets us move fast without hiring a dedicated QA lead.',
-          name: 'Hannah Morales',
-          role: 'Co-founder',
-          company: 'RosterKit',
-          stack: 'Built with Cursor',
+          title: 'Built for AI app stacks',
+          metric: 'Lovable · Bolt · Cursor · Replit',
+          detail:
+            'Audits specifically inspect client bundle keys, Supabase/Firebase access rules, open forms, and Stripe checkout flows.',
         },
       ],
-      faqHeading: 'Straight answers before you connect your app.',
+      pricingHeading: 'Indicative plans under consideration',
+      pricingSubheading:
+        'We are testing which pricing fits best before launch. Clicking “I’m interested” only logs interest—no payment is collected.',
+      pricingDisclaimer: 'Indicative pricing test only — free during validation.',
+      pricingPlans: [
+        {
+          id: 'one-time',
+          name: 'One-time audit',
+          priceRange: '€19 – €49',
+          cadence: 'one-off',
+          description: 'Best before a launch, client handoff, or enabling live Stripe payments.',
+          bullets: [
+            'Full exposed-key & database-rule check',
+            'Login, signup & checkout flow inspection',
+            'Plain-English report + copy-ready fix prompts',
+          ],
+          cta: 'I’m interested',
+          ctaRecorded: 'Interest noted ✓',
+        },
+        {
+          id: 'monthly',
+          name: 'Monthly monitoring',
+          priceRange: '€29 – €49',
+          cadence: '/ month',
+          description: 'For active builders shipping weekly AI edits who want to catch silent regressions.',
+          bullets: [
+            'Automated checks after new updates',
+            'Immediate alerts for leaks or broken flows',
+            'Before/after verification history',
+          ],
+          cta: 'I’m interested',
+          ctaRecorded: 'Interest noted ✓',
+        },
+        {
+          id: 'agency',
+          name: 'Team / Agency',
+          priceRange: '€99+',
+          cadence: '/ month',
+          description: 'For freelancers and lean studios delivering multiple AI-built client apps.',
+          bullets: [
+            'Multi-project client workspaces',
+            'Shareable pre-delivery audit reports',
+            'Priority checks across staging & production',
+          ],
+          cta: 'I’m interested',
+          ctaRecorded: 'Interest noted ✓',
+        },
+      ],
+      faqHeading: 'Frequently asked questions',
       faqItems: [
         {
-          question: 'Do I need to know how to write automated tests or read code?',
+          question: 'Is my code safe with you?',
           answer:
-            'No. You paste your preview URL or connect your repository, and Proofline automatically maps your primary screens, tests them in real browsers, and explains every issue in plain English with a copy-ready fix prompt.',
+            'Yes. Passive audits inspect only public preview behavior or screenshots you provide, without storing your source code or sharing data with third parties.',
         },
         {
-          question: 'Which AI app builders does Proofline support?',
+          question: 'Do you need repository or admin access to my app?',
           answer:
-            'Proofline works with any web app generated by Lovable, Bolt, Cursor, Replit, v0, or custom stacks. Because we verify both live browser behavior and deployed network/security boundaries, you do not need to change frameworks.',
+            'Not to start: your preview URL (with ownership confirmation) is enough to spot exposed keys, open database rules, and broken public flows.',
         },
         {
-          question: 'What kind of security exposures do you check for?',
+          question: 'Does it work with Lovable, Bolt, Replit, and Cursor?',
           answer:
-            'We check for accidentally shipped API keys in client bundles, overly permissive Supabase or Firebase read/write rules, unauthenticated API endpoints, missing webhook signature checks, and debug panels left enabled in production.',
+            'Yes. Proofline is built specifically for apps created with Lovable, Bolt, Replit, Cursor, and v0—especially stacks using Supabase, Firebase, and Stripe.',
         },
         {
-          question: 'How does early access work and what does it cost?',
+          question: 'When will it be available?',
           answer:
-            'We are onboarding design partners in weekly cohorts. Early access members get full automated flow testing and security checks free during beta, plus locked-in founder pricing when we launch publicly.',
+            'We are onboarding early builders now with manual and AI-assisted audits to shape the product around real launch needs.',
+        },
+        {
+          question: 'How much will it cost?',
+          answer:
+            'Your initial validation audit is free. Indicative pricing ranges from €19–49 for a one-time audit to €29–49/month for ongoing monitoring.',
         },
       ],
     },
-    waitlist: {
-      heading: 'Verify everything before your next launch.',
+    funnel: {
+      heading: 'Get your free security audit.',
       subheading:
-        'Reserve your spot for automated testing, security verification, and one-prompt fixes. Share what you are building and we will prioritize teams launching in the next 30 days.',
-      benefitsLead: 'What early members receive:',
+        'An email is all it takes to start. Optionally share your builder stack, preferred plan, or app URL in step 2.',
+      benefitsLead: 'What you receive:',
       benefitsBody:
-        'unlimited preview checks during beta, live secret & table-rule scanning, and direct onboarding with our founding team.',
+        'a passive check of your app (exposed keys, open database tables, broken flows) with clear plain-English fixes.',
       countLabel: (count) =>
-        `${count} ${count === 1 ? 'builder has' : 'builders have'} requested early access from this workspace.`,
-      confirmedTitleAlready: 'Your early access spot is confirmed.',
-      confirmedTitleNew: 'Welcome to the Proofline waitlist.',
-      confirmedBodyPrefix: 'We registered',
-      confirmedBodyMiddle: 'with',
-      confirmedBodySuffix:
-        'priority access. We will reach out as soon as your invite batch opens.',
-      registeredOn: 'Registered',
-      registerAnother: 'Register another team email',
+        `${count} ${count === 1 ? 'builder has' : 'builders have'} requested an audit from this workspace.`,
+      step1Title: 'Step 1 of 2 — Email only to get started',
       emailLabel: 'Email address',
-      emailPlaceholder: 'founder@company.com',
-      builderLabel: 'Primary AI builder',
-      urlLabel: 'App or preview URL (optional)',
-      urlPlaceholder: 'https://myapp.lovable.app',
-      painLegend: 'What worries you most before shipping?',
-      painPoints: [
-        'Flows breaking after new prompts',
-        'Exposed API keys or open database tables',
-        'Auth and Stripe checkout bugs in production',
-        'Mobile layout glitches before launch',
-      ],
-      noSpam: 'No spam. Only your early access invite and cohort updates.',
-      submit: 'Get Early Access',
-      submitting: 'Submitting...',
+      emailPlaceholder: 'you@yourproject.com',
+      gdprLabelPrefix: 'I agree to receive updates about this product and have my data processed under the',
+      gdprPrivacyLink: 'privacy policy',
+      gdprLabelSuffix: '. I can unsubscribe at any time.',
+      step1Submit: 'Audit My App Free',
+      step1Submitting: 'Submitting...',
       emailError: 'Please enter a valid email address.',
+      gdprError: 'Please accept the privacy policy to continue.',
+      fallbackError: 'Could not complete signup. Please try again.',
+      confirmedTitleAlready: 'You are already registered for a free audit.',
+      confirmedTitleNew: 'Your security audit is on the way!',
+      confirmedSubtitle:
+        'We saved your email. Optionally complete the quick questions below to help us tailor your audit and pricing.',
+      welcomeEmailNotice: 'A welcome email has just been sent to your inbox.',
+      shareTitle: 'Share with fellow builders:',
+      shareX: 'Share on X',
+      shareLinkedIn: 'LinkedIn',
+      shareCopy: 'Copy link',
+      shareCopied: 'Link copied',
+      shareText: 'I just requested a free security audit for my AI-built app on Proofline.',
+      step2Badge: 'Step 2 (optional · 30 seconds)',
+      step2Title: 'Help us tailor your free audit',
+      step2Subtitle:
+        'Every field is optional, and helps us prioritize your stack and pricing feedback.',
+      builderLabel: 'Tool used to build your app',
+      databaseLabel: 'Database',
+      databaseOptions: [
+        { value: 'Supabase', label: 'Supabase' },
+        { value: 'Firebase', label: 'Firebase' },
+        { value: 'Other', label: 'Other' },
+        { value: 'Unknown', label: 'I don’t know' },
+      ],
+      usersLabel: 'How many users does your app have?',
+      usersOptions: [
+        { value: '0', label: '0 (not launched yet)' },
+        { value: '1-50', label: '1 – 50 users' },
+        { value: '51-500', label: '51 – 500 users' },
+        { value: '500+', label: '500+ users' },
+      ],
+      painLabel: 'Your biggest concern',
+      painPoints: [
+        'Security vulnerabilities',
+        'Bugs after edits',
+        'Data loss',
+        'Other',
+      ],
+      planLabel: 'Which plan interests you?',
+      planOptions: [
+        { value: 'one-time', label: 'One-time audit (€19–49)' },
+        { value: 'monthly', label: 'Monthly monitoring (€29–49/mo)' },
+        { value: 'agency', label: 'Team / Agency (€99+/mo)' },
+      ],
+      budgetLabel: 'How much would you pay per month for peace of mind?',
+      budgetOptions: [
+        { value: '<20', label: 'Under €20/month' },
+        { value: '20-49', label: '€20 – €49/month' },
+        { value: '50-99', label: '€50 – €99/month' },
+        { value: '100+', label: '€100+/month' },
+      ],
+      urlLabel: 'App link for your free audit (optional)',
+      urlPlaceholder: 'https://myapp.lovable.app',
+      ownershipCheckbox: 'I certify that I own this application and authorize passive, non-destructive checks only.',
+      ownershipError: 'Please certify ownership of this application to request an audit for this URL.',
       urlError: 'Please enter a valid http or https URL (for example, myapp.lovable.app).',
-      fallbackError: 'Could not complete signup. Please check your details.',
+      interviewCheckbox: 'I’m open to a quick 15-minute feedback call.',
+      step2Submit: 'Save my answers',
+      step2Submitting: 'Saving...',
+      step2SavedTitle: 'Thanks! Your audit preferences are saved.',
+      step2SavedSubtitle: 'We will follow up shortly with next steps for your audit.',
+      editStep2: 'Edit answers',
+      registerAnother: 'Register another email address',
     },
     footer: {
       tagline:
-        'Continuous testing and security verification for AI-generated apps. Screenshots are analyzed in memory and never stored.',
-      earlyAccess: 'Early Access',
+        'Security audits and continuous verification for Lovable, Bolt, Cursor, Replit, and v0 apps.',
+      legal: 'Legal Notice',
+      privacy: 'Privacy Policy',
+      contact: 'Contact',
       copyright: '© 2026 Proofline',
+    },
+    legalModals: {
+      close: 'Close',
+      legalTitle: 'Legal Notice',
+      legalBody: [
+        'Proofline is an early validation project dedicated to helping builders verify security and reliability in AI-generated web applications.',
+        'Hosting: HTTPS cloud infrastructure (Vercel / GDPR-aligned hosting).',
+        'Audit ethics: only applications whose owner explicitly certifies ownership are reviewed using strictly passive, non-intrusive checks.',
+      ],
+      privacyTitle: 'Privacy Policy (GDPR)',
+      privacyBody: [
+        'Data collected: email address, optional qualification responses (builder tool, database, main concern, indicative budget, app URL), and UTM attribution parameters.',
+        'Purpose: delivering your free security audit, early-cohort follow-up, and product validation. Data is never sold or shared with third-party brokers.',
+        'Retention & rights: retained at most 12 months after last contact. You may request access, correction, or deletion anytime via our contact address or unsubscribe link.',
+      ],
+      contactTitle: 'Contact & Data Deletion',
+      contactBody: [
+        'Questions about your audit, partnership inquiries, or GDPR deletion requests?',
+        'Reach out directly and include the email address used during signup.',
+      ],
+      contactEmail: 'bonjour@proofline.app',
     },
   },
 };

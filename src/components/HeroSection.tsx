@@ -8,56 +8,75 @@ import {
   AlertTriangle,
   Lock,
 } from 'lucide-react';
-import type { BuilderTool, WaitlistResponse } from '../types/qa';
+import type { LeadStep1Response, UtmParams } from '../types/qa';
 import { WaitlistSuccessBurst } from './WaitlistSuccessBurst';
-import { submitWaitlist } from '../services/qaClient';
-import { formatBuilderLabel, type Locale, type SiteTranslations } from '../i18n/translations';
+import { submitLeadStep1 } from '../services/qaClient';
+import type { Locale, SiteTranslations } from '../i18n/translations';
+import type { LegalModalKind } from './LegalModal';
 
 interface HeroSectionProps {
   locale: Locale;
   t: SiteTranslations;
-  onWaitlistSuccess: (res: WaitlistResponse) => void;
+  utm: UtmParams;
+  activeLead: LeadStep1Response | null;
+  onStep1Success: (res: LeadStep1Response) => void;
+  onResetLead: () => void;
+  onJumpToStep2: () => void;
   onJumpToLiveAudit: () => void;
+  onOpenLegal: (kind: LegalModalKind) => void;
 }
-
-const BUILDER_OPTIONS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
 export function HeroSection({
   locale,
   t,
-  onWaitlistSuccess,
+  utm,
+  activeLead,
+  onStep1Success,
+  onResetLead,
+  onJumpToStep2,
   onJumpToLiveAudit,
+  onOpenLegal,
 }: HeroSectionProps) {
   const [email, setEmail] = useState('');
-  const [builderTool, setBuilderTool] = useState<BuilderTool>('Lovable');
+  const [consentGdpr, setConsentGdpr] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState<WaitlistResponse | null>(null);
+  const [invalidField, setInvalidField] = useState<'email' | 'gdpr' | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
+  const gdprRef = useRef<HTMLInputElement | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setInvalidField(null);
 
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
       setError(t.hero.emailError);
+      setInvalidField('email');
       emailRef.current?.focus();
+      return;
+    }
+
+    if (!consentGdpr) {
+      setError(t.hero.gdprError);
+      setInvalidField('gdpr');
+      gdprRef.current?.focus();
       return;
     }
 
     setSubmitting(true);
     try {
-      const data = await submitWaitlist(
-        {
-          email: trimmed,
-          builderTool,
-          source: 'hero',
-        },
-        locale
-      );
-      setSubmitted(data);
-      onWaitlistSuccess(data);
+      const data = await submitLeadStep1({
+        email: trimmed,
+        consentGdpr: true,
+        source: 'hero',
+        locale,
+        companyWebsite: honeypot,
+        ...utm,
+      });
+      onStep1Success(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.hero.fallbackError);
     } finally {
@@ -85,7 +104,7 @@ export function HeroSection({
             </p>
 
             <div className="mt-8 max-w-xl">
-              {submitted ? (
+              {activeLead ? (
                 <motion.div
                   role="status"
                   initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -105,36 +124,37 @@ export function HeroSection({
                       aria-hidden="true"
                     />
                   </motion.div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <p className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                      {submitted.alreadyRegistered ? t.hero.confirmedAlready : t.hero.confirmedNew}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      {t.hero.savedPrefix}{' '}
-                      <span className="font-mono text-slate-900 dark:text-white break-all">
-                        {submitted.entry.email}
-                      </span>{' '}
-                      {t.hero.savedMiddle}{' '}
-                      <span className="font-medium text-slate-900 dark:text-white">
-                        {formatBuilderLabel(submitted.entry.builderTool, locale)}
+                      {activeLead.alreadyRegistered ? t.hero.confirmedAlready : t.hero.confirmedNew}{' '}
+                      <span className="font-mono font-normal text-slate-700 dark:text-slate-300 break-all">
+                        ({activeLead.entry.email})
                       </span>
-                      {t.hero.savedSuffix}
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
+                    {activeLead.welcomeEmailSent && (
+                      <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        {t.hero.welcomeEmailNotice}
+                      </p>
+                    )}
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                      {t.hero.nextStepsLine}
+                    </p>
+                    <div className="pt-1 flex flex-wrap items-center gap-4 text-xs">
                       <button
                         type="button"
-                        onClick={onJumpToLiveAudit}
+                        onClick={onJumpToStep2}
                         className="inline-flex items-center gap-1 font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
-                        <span>{t.hero.jumpToAudit}</span>
+                        <span>{t.hero.completeStep2Cta}</span>
                         <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setSubmitted(null);
                           setEmail('');
+                          setConsentGdpr(false);
                           setError(null);
+                          onResetLead();
                         }}
                         className="font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
@@ -145,6 +165,20 @@ export function HeroSection({
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate className="space-y-3">
+                  {/* Anti-spam honeypot field */}
+                  <div className="sr-only" aria-hidden="true">
+                    <label htmlFor="hero-company-website">Website</label>
+                    <input
+                      id="hero-company-website"
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Step 1: Single email field + button */}
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <div className="flex-1 min-w-0">
                       <label htmlFor="hero-email" className="sr-only">
@@ -156,39 +190,25 @@ export function HeroSection({
                         type="email"
                         required
                         autoComplete="email"
-                        aria-invalid={Boolean(error)}
-                        aria-describedby={error ? 'hero-email-error' : undefined}
+                        aria-invalid={invalidField === 'email'}
+                        aria-describedby={
+                          error && invalidField === 'email' ? 'hero-form-error' : undefined
+                        }
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
-                          if (error) setError(null);
+                          if (error) {
+                            setError(null);
+                            setInvalidField(null);
+                          }
                         }}
                         placeholder={t.hero.emailPlaceholder}
                         className={`w-full px-4 py-3 min-h-[46px] text-sm bg-white dark:bg-[#111827] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                          error
+                          invalidField === 'email'
                             ? 'border-rose-500 dark:border-rose-500 focus:border-rose-600 focus:ring-rose-500/20'
                             : 'border-slate-300 dark:border-slate-700 focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25'
                         }`}
                       />
-                    </div>
-
-                    <div className="sm:w-36">
-                      <label htmlFor="hero-builder" className="sr-only">
-                        {t.hero.builderLabel}
-                      </label>
-                      <select
-                        id="hero-builder"
-                        aria-label={t.hero.builderAria}
-                        value={builderTool}
-                        onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
-                        className="w-full px-3 py-3 min-h-[46px] text-sm bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 transition-colors cursor-pointer"
-                      >
-                        {BUILDER_OPTIONS.map((tool) => (
-                          <option key={tool} value={tool}>
-                            {formatBuilderLabel(tool, locale)}
-                          </option>
-                        ))}
-                      </select>
                     </div>
 
                     <button
@@ -200,9 +220,45 @@ export function HeroSection({
                     </button>
                   </div>
 
+                  {/* GDPR explicit consent (Annexe B) */}
+                  <div className="flex items-start gap-2.5 pt-0.5">
+                    <input
+                      ref={gdprRef}
+                      id="hero-gdpr-consent"
+                      type="checkbox"
+                      checked={consentGdpr}
+                      aria-invalid={invalidField === 'gdpr'}
+                      aria-describedby={
+                        error && invalidField === 'gdpr' ? 'hero-form-error' : undefined
+                      }
+                      onChange={(e) => {
+                        setConsentGdpr(e.target.checked);
+                        if (error) {
+                          setError(null);
+                          setInvalidField(null);
+                        }
+                      }}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-[#1E40AF] focus:ring-[#1E40AF] cursor-pointer shrink-0"
+                    />
+                    <label
+                      htmlFor="hero-gdpr-consent"
+                      className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed cursor-pointer"
+                    >
+                      {t.hero.gdprLabelPrefix}{' '}
+                      <button
+                        type="button"
+                        onClick={() => onOpenLegal('privacy')}
+                        className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer"
+                      >
+                        {t.hero.gdprPrivacyLink}
+                      </button>
+                      {t.hero.gdprLabelSuffix}
+                    </label>
+                  </div>
+
                   {error && (
                     <p
-                      id="hero-email-error"
+                      id="hero-form-error"
                       role="alert"
                       className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-400"
                     >
@@ -233,7 +289,7 @@ export function HeroSection({
             </div>
           </div>
 
-          {/* Authored Proofline Diagnostic Preview Surface */}
+          {/* S7 — Aperçu stylisé d'un rapport d'audit */}
           <div className="lg:col-span-5">
             <div
               aria-label={t.hero.workbenchAria}
@@ -304,20 +360,6 @@ export function HeroSection({
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Full-width 4-column outcome strip below the hero split */}
-        <div className="mt-14 pt-10 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {t.hero.outcomes.map((outcome) => (
-            <div key={outcome.title}>
-              <p className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
-                {outcome.title}
-              </p>
-              <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {outcome.description}
-              </p>
-            </div>
-          ))}
         </div>
       </div>
     </section>

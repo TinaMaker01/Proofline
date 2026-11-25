@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
+import { ProblemAndSolution } from './components/ProblemAndSolution';
 import { CapabilitiesBento } from './components/CapabilitiesBento';
 import { LiveQAStudio } from './components/LiveQAStudio';
 import { ProofAndFAQ } from './components/ProofAndFAQ';
 import { WaitlistSection } from './components/WaitlistSection';
 import { Footer } from './components/Footer';
+import { LegalModal, type LegalModalKind } from './components/LegalModal';
 import type { ThemeMode } from './components/ThemeToggle';
-import type { WaitlistResponse } from './types/qa';
-import { getWaitlistStats } from './services/qaClient';
+import type { LeadStep1Response, PricingPlanId } from './types/qa';
+import { fetchLeadCount, trackPricingInterest } from './services/qaClient';
 import { TRANSLATIONS, type Locale } from './i18n/translations';
+import { captureUtmParams } from './utils/utm';
 
 const THEME_STORAGE_KEY = 'proofline-theme';
 const LOCALE_STORAGE_KEY = 'proofline-locale';
@@ -45,9 +48,12 @@ export default function App() {
   const focusTimerRef = useRef<number | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const [locale, setLocale] = useState<Locale>(getInitialLocale);
-  const [latestSignup, setLatestSignup] = useState<WaitlistResponse | null>(null);
-  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
+  const [activeLead, setActiveLead] = useState<LeadStep1Response | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<PricingPlanId | null>(null);
+  const [leadCount, setLeadCount] = useState<number | null>(null);
+  const [legalModal, setLegalModal] = useState<LegalModalKind>(null);
 
+  const utm = useMemo(() => captureUtmParams(), []);
   const t = TRANSLATIONS[locale];
 
   useEffect(() => {
@@ -87,7 +93,7 @@ export default function App() {
   }, [locale, t.meta.description, t.meta.title]);
 
   useEffect(() => {
-    setWaitlistCount(getWaitlistStats());
+    void fetchLeadCount().then((count) => setLeadCount(count));
   }, []);
 
   function scrollToSection(id: string) {
@@ -111,9 +117,33 @@ export default function App() {
     scrollToSection('live-audit');
   }
 
-  function handleWaitlistSuccess(res: WaitlistResponse) {
-    setLatestSignup(res);
-    setWaitlistCount(res.totalCount);
+  function handleStep1Success(res: LeadStep1Response) {
+    setActiveLead(res);
+    setLeadCount(res.totalCount);
+  }
+
+  function handleResetLead() {
+    setActiveLead(null);
+  }
+
+  function handleSelectPricingInterest(planId: PricingPlanId) {
+    setSelectedPlan(planId);
+    void trackPricingInterest({
+      planId,
+      email: activeLead?.entry.email,
+      locale,
+      utm,
+    });
+    scrollToSection('waitlist');
+    if (!activeLead) {
+      if (focusTimerRef.current !== null) {
+        window.clearTimeout(focusTimerRef.current);
+      }
+      focusTimerRef.current = window.setTimeout(() => {
+        waitlistEmailRef.current?.focus({ preventScroll: true });
+        focusTimerRef.current = null;
+      }, 350);
+    }
   }
 
   return (
@@ -136,19 +166,33 @@ export default function App() {
         <HeroSection
           locale={locale}
           t={t}
-          onWaitlistSuccess={handleWaitlistSuccess}
+          utm={utm}
+          activeLead={activeLead}
+          onStep1Success={handleStep1Success}
+          onResetLead={handleResetLead}
+          onJumpToStep2={() => scrollToSection('waitlist')}
           onJumpToLiveAudit={handleJumpToLiveAudit}
+          onOpenLegal={setLegalModal}
         />
+        <ProblemAndSolution t={t} />
         <CapabilitiesBento t={t} />
         <LiveQAStudio locale={locale} t={t} />
-        <ProofAndFAQ t={t} />
+        <ProofAndFAQ
+          t={t}
+          interestedPlan={selectedPlan}
+          onSelectPricingInterest={handleSelectPricingInterest}
+        />
         <WaitlistSection
           locale={locale}
           t={t}
+          utm={utm}
           emailInputRef={waitlistEmailRef}
-          latestSignup={latestSignup}
-          waitlistCount={waitlistCount}
-          onWaitlistSuccess={handleWaitlistSuccess}
+          activeLead={activeLead}
+          selectedPlan={selectedPlan}
+          leadCount={leadCount}
+          onStep1Success={handleStep1Success}
+          onResetLead={handleResetLead}
+          onOpenLegal={setLegalModal}
         />
       </main>
       <Footer
@@ -157,7 +201,9 @@ export default function App() {
         locale={locale}
         onChangeLocale={setLocale}
         t={t}
+        onOpenLegal={setLegalModal}
       />
+      <LegalModal kind={legalModal} onClose={() => setLegalModal(null)} t={t} />
     </div>
   );
 }
