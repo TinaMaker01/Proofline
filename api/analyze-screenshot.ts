@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { analyzeScreenshotWithGemini } from '../server/geminiService';
+import { analyzeScreenshotWithGemini } from '../server/geminiService.js';
 
 interface ServerlessRequest extends IncomingMessage {
   body?: unknown;
