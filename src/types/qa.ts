@@ -93,7 +93,6 @@ export interface LeadStep1Response {
   ok: boolean;
   alreadyRegistered: boolean;
   welcomeEmailSent: boolean;
-  persistenceMode: 'remote' | 'local';
   entry: LeadRecord;
   totalCount: number;
 }

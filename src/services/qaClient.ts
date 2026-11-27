@@ -88,6 +88,28 @@ export function getSavedActiveLead(): LeadRecord | null {
   return leads.length > 0 ? leads[leads.length - 1] : null;
 }
 
+/**
+ * Envoie une inscription au serveur. Toute réponse autre qu’un succès lève une
+ * erreur : un contact non enregistré ne doit jamais être annoncé comme inscrit.
+ */
+async function postLead(body: object, failureMessage: string): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(failureMessage);
+  }
+  if (!res.ok) {
+    const errData = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errData?.error || failureMessage);
+  }
+  return res;
+}
+
 export async function submitLeadStep1(payload: LeadStep1Payload): Promise<LeadStep1Response> {
   const normalizedEmail = payload.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
@@ -105,78 +127,43 @@ export async function submitLeadStep1(payload: LeadStep1Payload): Promise<LeadSt
     );
   }
 
-  // Always save locally for instant Step 2 continuity across refresh
+  const res = await postLead(
+    { action: 'step1', ...payload, email: normalizedEmail },
+    payload.locale === 'fr'
+      ? 'Ton inscription n’a pas été enregistrée. Réessaie dans un instant.'
+      : 'Your signup was not saved. Please try again in a moment.'
+  );
+  const data = (await res.json()) as {
+    alreadyRegistered?: boolean;
+    welcomeEmailSent?: boolean;
+    entry?: { email: string; createdAt: string };
+    totalCount?: number;
+  };
+
+  // Copie locale, seulement après confirmation du serveur (continuité étape 2).
   const localLeads = readStoredLeads();
-  const existingIdx = localLeads.findIndex((item) => item.email === normalizedEmail);
-  const localRecord: LeadRecord =
-    existingIdx >= 0
-      ? localLeads[existingIdx]
-      : {
-          email: normalizedEmail,
-          consentGdpr: true,
-          createdAt: new Date().toISOString(),
-        };
-
-  if (existingIdx < 0) {
-    writeStoredLeads([...localLeads, localRecord]);
-  }
-
-  try {
-    const res = await fetch('/api/leads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'step1', ...payload, email: normalizedEmail }),
-    });
-
-    if (res.ok) {
-      const data = (await res.json()) as {
-        alreadyRegistered?: boolean;
-        welcomeEmailSent?: boolean;
-        entry?: { email: string; createdAt: string };
-        totalCount?: number;
-      };
-      return {
-        ok: true,
-        alreadyRegistered: Boolean(data.alreadyRegistered),
-        welcomeEmailSent: Boolean(data.welcomeEmailSent),
-        persistenceMode: 'remote',
-        entry: {
-          ...localRecord,
-          email: data.entry?.email || localRecord.email,
-          createdAt: data.entry?.createdAt || localRecord.createdAt,
-        },
-        totalCount: data.totalCount ?? readStoredLeads().length,
-      };
-    }
-
-    if (res.status !== 404 && res.status !== 503) {
-      const errData = (await res.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(
-        errData?.error ||
-          (payload.locale === 'fr'
-            ? 'Impossible d’enregistrer ton inscription pour le moment.'
-            : 'Could not save your signup right now.')
-      );
-    }
-  } catch (err) {
-    if (!(err instanceof TypeError)) {
-      throw err;
-    }
+  const existing = localLeads.find((item) => item.email === normalizedEmail);
+  const entry: LeadRecord = {
+    ...(existing ?? { email: normalizedEmail, consentGdpr: true }),
+    email: data.entry?.email || normalizedEmail,
+    createdAt: data.entry?.createdAt || existing?.createdAt || new Date().toISOString(),
+  };
+  if (!existing) {
+    writeStoredLeads([...localLeads, entry]);
   }
 
   return {
     ok: true,
-    alreadyRegistered: existingIdx >= 0,
-    welcomeEmailSent: false,
-    persistenceMode: 'local',
-    entry: localRecord,
-    totalCount: readStoredLeads().length,
+    alreadyRegistered: Boolean(data.alreadyRegistered),
+    welcomeEmailSent: Boolean(data.welcomeEmailSent),
+    entry,
+    totalCount: data.totalCount ?? 0,
   };
 }
 
 export async function submitLeadStep2(
   payload: LeadStep2Payload
-): Promise<{ persistenceMode: 'remote' | 'local'; updatedLead: LeadRecord }> {
+): Promise<{ updatedLead: LeadRecord }> {
   const normalizedEmail = payload.email.trim().toLowerCase();
   const trimmedUrl = payload.appUrl?.trim() || '';
 
@@ -225,6 +212,13 @@ export async function submitLeadStep2(
     step2Completed: true,
   };
 
+  await postLead(
+    { action: 'step2', ...payload, email: normalizedEmail, appUrl: normalizedUrl },
+    payload.locale === 'fr'
+      ? 'Tes réponses n’ont pas été enregistrées. Réessaie dans un instant.'
+      : 'Your answers were not saved. Please try again in a moment.'
+  );
+
   if (existingIdx >= 0) {
     localLeads[existingIdx] = updatedLead;
     writeStoredLeads(localLeads);
@@ -232,38 +226,7 @@ export async function submitLeadStep2(
     writeStoredLeads([...localLeads, updatedLead]);
   }
 
-  try {
-    const res = await fetch('/api/leads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'step2',
-        ...payload,
-        email: normalizedEmail,
-        appUrl: normalizedUrl,
-      }),
-    });
-
-    if (res.ok) {
-      return { persistenceMode: 'remote', updatedLead };
-    }
-
-    if (res.status !== 404 && res.status !== 503) {
-      const errData = (await res.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(
-        errData?.error ||
-          (payload.locale === 'fr'
-            ? 'Impossible d’enregistrer tes réponses.'
-            : 'Could not save your answers.')
-      );
-    }
-  } catch (err) {
-    if (!(err instanceof TypeError)) {
-      throw err;
-    }
-  }
-
-  return { persistenceMode: 'local', updatedLead };
+  return { updatedLead };
 }
 
 interface PlanEventParams {
