@@ -65,7 +65,11 @@ async function supabaseRequest(
     ...init,
     headers: {
       apikey: env.supabaseServiceKey,
-      Authorization: `Bearer ${env.supabaseServiceKey}`,
+      // Seules les anciennes clés service_role (JWT) vont dans Authorization ;
+      // les clés sb_secret_ ne s'envoient que dans l'en-tête apikey.
+      ...(env.supabaseServiceKey.startsWith('sb_')
+        ? {}
+        : { Authorization: `Bearer ${env.supabaseServiceKey}` }),
       'Content-Type': 'application/json',
       ...(init.headers || {}),
     },
