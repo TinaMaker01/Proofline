@@ -192,6 +192,9 @@ export interface SiteTranslations {
     welcomeMessage: string;
     resetMessage: string;
     demoFocusDefault: string;
+    exampleResultNotice: string;
+    exampleReplyLabel: string;
+    chatPrivacyNote: string;
     askAdvisorPrefix: string;
     askAdvisorMiddle: string;
     askAdvisorSuffix: string;
@@ -317,7 +320,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     meta: {
       title: 'Proofline — Ton app générée par IA est-elle vraiment sûre ?',
       description:
-        'Reçois en 5 minutes un audit de sécurité passif gratuit pour ton app Lovable, Bolt, Cursor, Replit ou v0 : clés exposées, base de données ouverte, parcours cassés. Sans jargon.',
+        'Reçois un audit de sécurité passif gratuit pour ton app Lovable, Bolt, Cursor, Replit ou v0 : clés exposées, base de données ouverte, parcours cassés. Sans jargon.',
     },
     skipLink: 'Aller au contenu principal',
     nav: {
@@ -345,7 +348,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     hero: {
       headline: 'Ton app générée par IA est-elle vraiment sûre ?',
       subheadline:
-        'Modifie ton app avec l’IA sans peur. Reçois en 5 minutes un audit gratuit de sécurité : clés exposées, base de données ouverte, accès non protégés. Explications claires, sans jargon.',
+        'Modifie ton app avec l’IA sans peur. Reçois un audit gratuit de sécurité :clés exposées, base de données ouverte, accès non protégés. Explications claires, sans jargon.',
       emailLabel: 'Ton adresse e-mail',
       emailPlaceholder: 'toi@tonprojet.com',
       gdprLabelPrefix: 'J’accepte de recevoir des informations sur ce produit et que mes données soient traitées selon la',
@@ -365,7 +368,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       completeStep2Cta: 'Compléter mes infos d’audit (étape 2)',
       registerAnother: 'Inscrire une autre adresse',
       workbenchAria: 'Aperçu d’un rapport d’audit Proofline',
-      highRisk: 'Risque critique',
+      highRisk: 'Exemple · Risque critique',
       runLiveCheck: 'Tester sur une capture',
       promptHeader: 'Action recommandée · À coller dans Bolt',
       promptBody:
@@ -533,7 +536,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       remove: 'Retirer',
       dropTitle: 'Dépose, parcours ou colle une capture (Ctrl+V)',
       dropHint:
-        'PNG, JPEG ou WebP jusqu’à 8 Mo · Uniquement tes propres apps, masque tes données clients · Analyse en mémoire non stockée',
+        'PNG, JPEG ou WebP jusqu’à 8 Mo · Uniquement tes propres apps · La capture est envoyée à Google Gemini : masque tes clés et les données clients',
       uploadedAltFallback: 'Capture d’écran importée',
       replace: 'Remplacer',
       builtWith: 'Créé avec',
@@ -602,6 +605,10 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       resetMessage:
         'Conversation réinitialisée. Pose ta question sur la sécurité ou la fiabilité de ton application.',
       demoFocusDefault: 'Vérifier les secrets exposés, le paiement mobile cassé et les fuites de données.',
+      exampleResultNotice:
+        'Exemple préécrit : l’analyse en direct est indisponible. Ces constats ne viennent pas d’une lecture de ta capture.',
+      exampleReplyLabel: 'Réponse type préécrite · conseiller en direct indisponible',
+      chatPrivacyNote: 'Tes messages sont envoyés à Google Gemini : n’y colle ni clé ni donnée personnelle.',
       askAdvisorPrefix: 'Dans mon app',
       askAdvisorMiddle: ', le diagnostic a signalé',
       askAdvisorSuffix: 'Comment vérifier ce correctif sans tout casser ?',
@@ -635,10 +642,10 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
             'Nous n’auditons que les applications dont tu certifies être propriétaire. Aucun test destructif ni surcharge sur ton serveur.',
         },
         {
-          title: 'Respect strict de ton code',
-          metric: 'Aucune conservation',
+          title: 'Ce que deviennent tes captures',
+          metric: 'Analyse par Google Gemini',
           detail:
-            'Les captures et vérifications sont traitées de manière isolée et jamais partagées ni réutilisées pour entraîner un modèle.',
+            'Proofline n’enregistre pas tes captures. Elles sont envoyées à Google Gemini pour l’analyse et traitées selon les conditions de Google : masque toute donnée sensible avant l’envoi.',
         },
         {
           title: 'Contrôles adaptés aux stacks IA',
@@ -698,12 +705,12 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       faqHeading: 'Questions fréquentes',
       faqItems: [
         {
-          question: 'Mon code est-il en sécurité chez vous ?',
+          question: 'Que deviennent mon code et mes données ?',
           answer:
-            'Oui. Les audits passifs analysent uniquement le comportement public de ton aperçu ou les captures fournies, sans conserver ton code source ni partager tes données avec des tiers.',
+            'Les audits passifs portent uniquement sur le comportement public de ton aperçu ou sur les captures fournies : nous ne demandons pas ton code source. Dans la démo, tes captures et messages sont envoyés à Google Gemini. Le détail des prestataires figure dans la politique de confidentialité.',
         },
         {
-          question: 'Avez-vous besoin d’un accès à mon app ?',
+          question: 'As-tu besoin d’un accès à mon app ?',
           answer:
             'Pas nécessairement pour démarrer : l’URL publique de prévisualisation (avec ta confirmation de propriété) suffit pour détecter les clés exposées, règles d’accès ouvertes et parcours cassés.',
         },
@@ -741,8 +748,8 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       gdprLabelSuffix: '. Je peux me désinscrire à tout moment.',
       step1Submit: 'Audite mon app gratuitement',
       step1Submitting: 'Inscription...',
-      emailError: 'Veuillez saisir une adresse e-mail valide.',
-      gdprError: 'Veuillez cocher la case d’accord RGPD pour continuer.',
+      emailError: 'Saisis une adresse e-mail valide.',
+      gdprError: 'Coche la case d’accord RGPD pour continuer.',
       fallbackError: 'Impossible de finaliser l’inscription. Réessaie dans un instant.',
       confirmedTitleAlready: 'Tu es déjà inscrit pour l’audit gratuit.',
       confirmedTitleNew: 'Ton audit de sécurité est en route !',
@@ -809,7 +816,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     },
     footer: {
       tagline:
-        'Audit de sécurité et vérification continue pour vos apps Lovable, Bolt, Cursor, Replit et v0.',
+        'Audit de sécurité et vérification continue pour tes apps Lovable, Bolt, Cursor, Replit et v0.',
       legal: 'Mentions légales',
       privacy: 'Politique de confidentialité',
       contact: 'Contact',
@@ -820,14 +827,16 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       legalTitle: 'Mentions légales',
       legalBody: [
         'Proofline est un projet de validation porté par une équipe indépendante dédiée à la qualité et à la sécurité des applications générées par IA.',
-        'Hébergement : infrastructure cloud sécurisée HTTPS (Vercel / fournisseur européen ou conforme RGPD).',
+        'Hébergement du site : Vercel Inc. (vercel.com), accessible en HTTPS.',
         'Règle éthique d’audit : seules les applications dont le demandeur certifie être propriétaire sont soumises à des vérifications passives et non intrusives.',
       ],
       privacyTitle: 'Politique de confidentialité (RGPD)',
       privacyBody: [
-        'Données collectées : adresse e-mail, réponses facultatives de qualification (outil, base de données, crainte, budget indicatif, URL de l’app) et paramètres UTM de provenance.',
-        'Finalité : envoi de votre audit gratuit, suivi du programme pilote et mesure d’intérêt produit. Aucune revente ni cession de données à des tiers.',
-        'Durée & droits : données conservées au maximum 12 mois après le dernier contact. Tu disposes d’un droit d’accès, de rectification et de suppression immédiate sur simple demande ou via le lien de désinscription.',
+        'Données collectées : adresse e-mail et accord de confidentialité ; réponses facultatives (outil, base de données, nombre d’utilisateurs, crainte, formule, budget, URL de l’app, certification de propriété, accord pour un entretien) ; langue, paramètres UTM, page de provenance ; clics sur les formules tarifaires, associés à ton e-mail si tu l’as saisi. Une copie reste dans le stockage local de ton navigateur.',
+        'Démo (captures et messages) : ils transitent par notre serveur vers l’API Google Gemini, qui produit l’analyse ou la réponse. Proofline ne les enregistre pas. Google les traite selon les conditions de l’API Gemini (ai.google.dev/gemini-api/terms) : selon l’offre et le pays, ils peuvent être conservés un temps limité, utilisés pour améliorer ses services et relus par des personnes. N’envoie ni clé secrète ni donnée personnelle.',
+        'Prestataires : Vercel (hébergement et journaux techniques, dont l’adresse IP), Supabase (base de données des inscriptions), Resend (envoi des e-mails), Google (API Gemini, et polices Google Fonts dont le chargement transmet ton adresse IP). Certains peuvent traiter des données hors de l’Union européenne.',
+        'Finalité : envoi de ton audit gratuit, suivi du programme pilote et mesure d’intérêt produit. Aucune revente de données.',
+        'Durée & droits : données conservées au maximum 12 mois après le dernier contact. Tu disposes d’un droit d’accès, de rectification et de suppression, sur simple demande à notre adresse de contact ou en répondant « Désinscription » à nos e-mails.',
       ],
       contactTitle: 'Contact & suppression des données',
       contactBody: [
@@ -841,7 +850,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     meta: {
       title: 'Proofline — Is Your AI-Generated App Actually Secure?',
       description:
-        'Get a free 5-minute passive security audit for your Lovable, Bolt, Cursor, Replit, or v0 app: exposed keys, open tables, unprotected endpoints. Clear answers, zero jargon.',
+        'Get a free passive security audit for your Lovable, Bolt, Cursor, Replit, or v0 app: exposed keys, open tables, unprotected endpoints. Clear answers, zero jargon.',
     },
     skipLink: 'Skip to main content',
     nav: {
@@ -869,7 +878,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     hero: {
       headline: 'Is your AI-generated app actually secure?',
       subheadline:
-        'Update your app with AI without the fear. Get a free passive security audit in 5 minutes: leaked keys, open databases, unprotected access. Plain English, zero jargon.',
+        'Update your app with AI without the fear. Get a free passive security audit:leaked keys, open databases, unprotected access. Plain English, zero jargon.',
       emailLabel: 'Your email address',
       emailPlaceholder: 'you@yourproject.com',
       gdprLabelPrefix: 'I agree to receive updates about this product and have my data processed under the',
@@ -889,7 +898,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       completeStep2Cta: 'Complete audit details (Step 2)',
       registerAnother: 'Register another email',
       workbenchAria: 'Sample Proofline audit report',
-      highRisk: 'Critical Risk',
+      highRisk: 'Example · Critical Risk',
       runLiveCheck: 'Try on a screenshot',
       promptHeader: 'Recommended fix · Paste into Bolt',
       promptBody:
@@ -1047,7 +1056,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       remove: 'Remove',
       dropTitle: 'Drop, browse, or paste screenshot (Ctrl+V)',
       dropHint:
-        'PNG, JPEG, or WebP up to 8 MB · Only apps you own, crop customer PII · Analyzed in memory, never stored',
+        'PNG, JPEG, or WebP up to 8 MB · Only apps you own · The screenshot is sent to Google Gemini: hide keys and customer data',
       uploadedAltFallback: 'Uploaded application screenshot',
       replace: 'Replace',
       builtWith: 'Built with',
@@ -1116,6 +1125,10 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       resetMessage:
         'Conversation reset. Ask anything about testing, securing, or fixing your AI-built app.',
       demoFocusDefault: 'Check for exposed secrets, broken checkout layout, and data leaks.',
+      exampleResultNotice:
+        'Pre-written example: live analysis is unavailable. These findings do not come from reading your screenshot.',
+      exampleReplyLabel: 'Pre-written sample reply · live advisor unavailable',
+      chatPrivacyNote: 'Your messages are sent to Google Gemini: do not paste keys or personal data.',
       askAdvisorPrefix: 'In my',
       askAdvisorMiddle: 'app, Proofline flagged',
       askAdvisorSuffix: 'How should I verify the fix safely?',
@@ -1149,10 +1162,10 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
             'We only audit applications whose ownership you explicitly certify. No destructive load testing or unauthorized probing.',
         },
         {
-          title: 'Strict data privacy',
-          metric: 'Zero code retention',
+          title: 'What happens to your screenshots',
+          metric: 'Analyzed by Google Gemini',
           detail:
-            'Screenshots and diagnostic checks run in isolated memory and are never sold or used to train third-party models.',
+            'Proofline does not save your screenshots. They are sent to Google Gemini for analysis and handled under Google’s terms: hide any sensitive data before uploading.',
         },
         {
           title: 'Built for AI app stacks',
@@ -1212,9 +1225,9 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       faqHeading: 'Frequently asked questions',
       faqItems: [
         {
-          question: 'Is my code safe with you?',
+          question: 'What happens to my code and data?',
           answer:
-            'Yes. Passive audits inspect only public preview behavior or screenshots you provide, without storing your source code or sharing data with third parties.',
+            'Passive audits only look at your preview’s public behavior or the screenshots you provide: we do not ask for your source code. In the demo, your screenshots and messages are sent to Google Gemini. The privacy policy lists our providers.',
         },
         {
           question: 'Do you need repository or admin access to my app?',
@@ -1334,14 +1347,16 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       legalTitle: 'Legal Notice',
       legalBody: [
         'Proofline is an early validation project dedicated to helping builders verify security and reliability in AI-generated web applications.',
-        'Hosting: HTTPS cloud infrastructure (Vercel / GDPR-aligned hosting).',
+        'Website hosting: Vercel Inc. (vercel.com), served over HTTPS.',
         'Audit ethics: only applications whose owner explicitly certifies ownership are reviewed using strictly passive, non-intrusive checks.',
       ],
       privacyTitle: 'Privacy Policy (GDPR)',
       privacyBody: [
-        'Data collected: email address, optional qualification responses (builder tool, database, main concern, indicative budget, app URL), and UTM attribution parameters.',
-        'Purpose: delivering your free security audit, early-cohort follow-up, and product validation. Data is never sold or shared with third-party brokers.',
-        'Retention & rights: retained at most 12 months after last contact. You may request access, correction, or deletion anytime via our contact address or unsubscribe link.',
+        'Data collected: email address and privacy consent; optional answers (builder tool, database, user count, main concern, plan, budget, app URL, ownership certification, interview opt-in); language, UTM parameters, referring page; clicks on pricing plans, linked to your email if you entered it. A copy stays in your browser’s local storage.',
+        'Demo (screenshots and messages): they pass through our server to the Google Gemini API, which produces the analysis or reply. Proofline does not save them. Google handles them under the Gemini API terms (ai.google.dev/gemini-api/terms): depending on the tier and country, they may be retained for a limited time, used to improve its services, and read by human reviewers. Do not send secret keys or personal data.',
+        'Providers: Vercel (hosting and technical logs, including IP address), Supabase (signup database), Resend (email delivery), Google (Gemini API, and Google Fonts, whose loading shares your IP address). Some may process data outside the European Union.',
+        'Purpose: delivering your free security audit, early-cohort follow-up, and product validation. Data is never sold.',
+        'Retention & rights: retained at most 12 months after last contact. You may request access, correction, or deletion anytime via our contact address, or reply “Désinscription” (unsubscribe) to our emails.',
       ],
       contactTitle: 'Contact & Data Deletion',
       contactBody: [

@@ -792,7 +792,8 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
       const replyMsg: ChatMessage = {
         id: `model-${Date.now()}`,
         role: 'model',
-        text: reply,
+        text: reply.text,
+        isExample: reply.isExample,
         timestamp: new Date().toLocaleTimeString(timeLocale, {
           hour: '2-digit',
           minute: '2-digit',
@@ -1148,6 +1149,12 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {analysisResult.isExample && (
+                      <p className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>{t.studio.exampleResultNotice}</span>
+                      </p>
+                    )}
                     <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
                       <div>
                         <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -1418,6 +1425,12 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                       )}
                     </div>
 
+                    {msg.isExample && (
+                      <p className="mb-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                        {t.studio.exampleReplyLabel}
+                      </p>
+                    )}
+
                     <div
                       className={`rounded-xl px-4 py-3.5 ${
                         isUser
@@ -1580,6 +1593,9 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 px-0.5">
                   {t.studio.enterToSendHint}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 px-0.5">
+                  {t.studio.chatPrivacyNote}
                 </p>
               </form>
             </div>

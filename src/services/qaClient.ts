@@ -93,14 +93,14 @@ export async function submitLeadStep1(payload: LeadStep1Payload): Promise<LeadSt
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
     throw new Error(
       payload.locale === 'fr'
-        ? 'Veuillez saisir une adresse e-mail valide.'
+        ? 'Saisis une adresse e-mail valide.'
         : 'Please enter a valid email address.'
     );
   }
   if (!payload.consentGdpr) {
     throw new Error(
       payload.locale === 'fr'
-        ? 'Veuillez accepter la politique de confidentialité pour vous inscrire.'
+        ? 'Accepte la politique de confidentialité pour t’inscrire.'
         : 'Please accept the privacy policy to register.'
     );
   }
@@ -324,146 +324,88 @@ async function analyzeScreenshotFallback(params: {
   isDemoScreenshot: boolean;
   locale: Locale;
 }): Promise<ScreenshotAnalysisResult> {
-  const { locale, builderTool, focusNote, isDemoScreenshot } = params;
+  const { locale, builderTool, isDemoScreenshot } = params;
 
   await wait(450);
 
+  // Sans analyse en direct, seule la capture de démo a un exemple à montrer :
+  // une capture réelle n’est jamais commentée sans avoir été lue.
+  if (!isDemoScreenshot) {
+    throw new Error(
+      locale === 'fr'
+        ? 'L’analyse en direct est indisponible : ta capture n’a pas été analysée. Réessaie plus tard.'
+        : 'Live analysis is unavailable: your screenshot was not analyzed. Please try again later.'
+    );
+  }
+
   const builderName = builderTool === 'Other' && locale === 'fr' ? 'ton outil' : builderTool;
 
-  if (isDemoScreenshot) {
-    if (locale === 'fr') {
-      return {
-        checkedArea: 'Écran Paiement & Facturation',
-        readinessStatus: 'High Risk',
-        summary:
-          'Des clés secrètes côté client et un accès non authentifié à la base de données sont exposés directement sur cet écran de paiement, avec un bouton mobile cassé. Sécurise les clés Stripe et Supabase côté serveur avant de partager ce lien.',
-        findings: [
-          {
-            severity: 'Critical',
-            category: 'Security',
-            title: 'Clés secrètes et panneau debug exposés dans l’interface client',
-            detail:
-              'STRIPE_SECRET et SUPABASE_SERVICE_ROLE_KEY apparaissent dans le navigateur et le panneau de debug à droite, exposant ton compte à tout visiteur.',
-            fixPrompt: `Supprime le panneau DEBUG ENV des builds de production dans ${builderName}, révoque tes clés Stripe secrète et Supabase service_role, et déplace tous les appels sensibles dans des routes API serveur.`,
-          },
-          {
-            severity: 'Critical',
-            category: 'Security',
-            title: 'La table users renvoie 1 482 lignes sans authentification',
-            detail:
-              'La capture montre RLS_ENABLED=false et une requête non authentifiée renvoyant les lignes utilisateurs directement au client.',
-            fixPrompt: `Active Row Level Security (RLS) sur la table public.users et ajoute une règle limitant la lecture et la modification aux utilisateurs authentifiés où auth.uid() = id.`,
-          },
-          {
-            severity: 'Warning',
-            category: 'Broken Flow',
-            title: 'Le bouton principal Payer chevauche et déborde de la carte',
-            detail:
-              'Le bouton « Pay $49.00 Now » entre en collision avec « Cancel subscription » et sort du conteneur, tandis que le libellé secondaire manque de contraste.',
-            fixPrompt: `Place les deux boutons dans un conteneur flex responsive avec gap-3 et w-full sm:w-auto, et fonce la couleur du texte secondaire en slate-700 pour un contraste lisible.`,
-          },
-        ],
-      };
-    }
-
+  if (locale === 'fr') {
     return {
-      checkedArea: 'Checkout & Billing Screen',
+      isExample: true,
+      checkedArea: 'Écran Paiement & Facturation',
       readinessStatus: 'High Risk',
       summary:
-        'Critical client-side secrets and unauthenticated database access are exposed directly on this checkout screen, alongside a broken mobile pay button. Lock down the Stripe and Supabase keys on the server before sharing this preview link.',
+        'Des clés secrètes côté client et un accès non authentifié à la base de données sont exposés directement sur cet écran de paiement, avec un bouton mobile cassé. Sécurise les clés Stripe et Supabase côté serveur avant de partager ce lien.',
       findings: [
         {
           severity: 'Critical',
           category: 'Security',
-          title: 'Secret keys and debug env panel exposed in client UI',
+          title: 'Clés secrètes et panneau debug exposés dans l’interface client',
           detail:
-            'STRIPE_SECRET and SUPABASE_SERVICE_ROLE_KEY appear in the browser runtime and right-hand debug drawer, letting any visitor read or charge your account.',
-          fixPrompt: `Remove the debug environment drawer from production builds in ${builderName}, rotate your Stripe secret and Supabase service-role keys, and move all secret usage into server-side API routes.`,
+            'STRIPE_SECRET et SUPABASE_SERVICE_ROLE_KEY apparaissent dans le navigateur et le panneau de debug à droite, exposant ton compte à tout visiteur.',
+          fixPrompt: `Supprime le panneau DEBUG ENV des builds de production dans ${builderName}, révoque tes clés Stripe secrète et Supabase service_role, et déplace tous les appels sensibles dans des routes API serveur.`,
         },
         {
           severity: 'Critical',
           category: 'Security',
-          title: 'Users table returns 1,482 rows without authentication',
+          title: 'La table users renvoie 1 482 lignes sans authentification',
           detail:
-            'The screenshot shows RLS_ENABLED=false and an unauthenticated GET/POST returning user rows directly to the client.',
-          fixPrompt: `Enable Row Level Security (RLS) on the public.users table and add a policy so authenticated users can only select or update rows where auth.uid() = id.`,
+            'La capture montre RLS_ENABLED=false et une requête non authentifiée renvoyant les lignes utilisateurs directement au client.',
+          fixPrompt: `Active Row Level Security (RLS) sur la table public.users et ajoute une règle limitant la lecture et la modification aux utilisateurs authentifiés où auth.uid() = id.`,
         },
         {
           severity: 'Warning',
           category: 'Broken Flow',
-          title: 'Primary checkout button overlaps and clips outside card bounds',
+          title: 'Le bouton principal Payer chevauche et déborde de la carte',
           detail:
-            'The "Pay $49.00 Now" button collides with "Cancel subscription" and extends past the card container, while the cancel button text fails contrast.',
-          fixPrompt: `Place "Cancel subscription" and "Pay $49.00 Now" inside a responsive flex container with gap-3 and w-full sm:w-auto, and darken the secondary button label to slate-700 for readable contrast.`,
+            'Le bouton « Pay $49.00 Now » entre en collision avec « Cancel subscription » et sort du conteneur, tandis que le libellé secondaire manque de contraste.',
+          fixPrompt: `Place les deux boutons dans un conteneur flex responsive avec gap-3 et w-full sm:w-auto, et fonce la couleur du texte secondaire en slate-700 pour un contraste lisible.`,
         },
       ],
     };
   }
 
-  if (locale === 'fr') {
-    const focusSummary = focusNote.trim() ? `Zone ciblée : « ${focusNote.trim()} ». ` : '';
-    return {
-      checkedArea: `Écran ${builderName}`,
-      readinessStatus: 'Needs Fixes',
-      summary: `${focusSummary}Inspection de repli effectuée pour ton écran ${builderName}. Vérifie les frontières d’authentification, la gestion d’erreur et les cibles tactiles mobiles ci-dessous avant la mise en ligne.`,
-      findings: [
-        {
-          severity: 'Warning',
-          category: 'Security',
-          title: 'Vérifier qu’aucune clé API privée ne transite côté client',
-          detail:
-            'Les frontends générés par IA incluent parfois des clés secrètes ou des requêtes non protégées directement dans les composants navigateurs.',
-          fixPrompt: `Audite tous les composants clients de cet écran ${builderName} pour ne conserver que la clé publique anon et déplacer les appels sensibles dans une route serveur.`,
-        },
-        {
-          severity: 'Warning',
-          category: 'Broken Flow',
-          title: 'Ajouter des états explicites de chargement, vide et reprise sur erreur',
-          detail:
-            'Les formulaires et actions principales doivent désactiver l’envoi en cours et afficher un message clair pour éviter de bloquer l’utilisateur en cas d’échec réseau.',
-          fixPrompt: `Ajoute un état de chargement, une protection anti-double-clic et un message d’erreur inline role="alert" avec option de reprise sur cet écran ${builderName}.`,
-        },
-        {
-          severity: 'Suggestion',
-          category: 'Accessibility',
-          title: 'Contrôler les zones tactiles de 44 px et les anneaux de focus clavier',
-          detail:
-            'Assure-toi que les boutons, sélecteurs et liens gardent un espacement confortable à 390 px de large et un contour focus-visible contrasté.',
-          fixPrompt: `Passe les éléments interactifs de cet écran à min-h-[44px] sur mobile, relie chaque champ à un <label> explicite et ajoute focus-visible.`,
-        },
-      ],
-    };
-  }
-
-  const focusSummary = focusNote.trim() ? `Focused on "${focusNote.trim()}". ` : '';
   return {
-    checkedArea: `${builderName} App Screen`,
-    readinessStatus: 'Needs Fixes',
-    summary: `${focusSummary}Fallback inspection completed for your ${builderName} screen. Review the authentication boundary, error-state handling, and mobile tap spacing checks below before launching.`,
+    isExample: true,
+    checkedArea: 'Checkout & Billing Screen',
+    readinessStatus: 'High Risk',
+    summary:
+      'Critical client-side secrets and unauthenticated database access are exposed directly on this checkout screen, alongside a broken mobile pay button. Lock down the Stripe and Supabase keys on the server before sharing this preview link.',
     findings: [
       {
-        severity: 'Warning',
+        severity: 'Critical',
         category: 'Security',
-        title: 'Verify no private API keys or service tokens ship in client state',
+        title: 'Secret keys and debug env panel exposed in client UI',
         detail:
-          'AI-generated frontends often inline secret keys or unguarded table queries inside client components during rapid iteration.',
-        fixPrompt: `Audit all client components in this ${builderName} screen to ensure only public anon keys are exposed and move any secret API calls into a server route.`,
+          'STRIPE_SECRET and SUPABASE_SERVICE_ROLE_KEY appear in the browser runtime and right-hand debug drawer, letting any visitor read or charge your account.',
+        fixPrompt: `Remove the debug environment drawer from production builds in ${builderName}, rotate your Stripe secret and Supabase service-role keys, and move all secret usage into server-side API routes.`,
+      },
+      {
+        severity: 'Critical',
+        category: 'Security',
+        title: 'Users table returns 1,482 rows without authentication',
+        detail:
+          'The screenshot shows RLS_ENABLED=false and an unauthenticated GET/POST returning user rows directly to the client.',
+        fixPrompt: `Enable Row Level Security (RLS) on the public.users table and add a policy so authenticated users can only select or update rows where auth.uid() = id.`,
       },
       {
         severity: 'Warning',
         category: 'Broken Flow',
-        title: 'Add explicit loading, empty, and inline error recovery states',
+        title: 'Primary checkout button overlaps and clips outside card bounds',
         detail:
-          'Forms and primary actions need disabled-while-submitting guards and clear recovery copy so users are not stuck if a network call fails.',
-        fixPrompt: `Add loading spinners, disabled submit guards, and inline role="alert" error recovery messages to every form and action on this ${builderName} screen.`,
-      },
-      {
-        severity: 'Suggestion',
-        category: 'Accessibility',
-        title: 'Confirm 44px touch targets and visible keyboard focus rings',
-        detail:
-          'Ensure icon buttons, dropdowns, and secondary links keep comfortable spacing on 390px viewports and clear focus-visible outlines.',
-        fixPrompt: `Update all interactive controls on this screen to use min-h-[44px] on mobile, explicit <label> associations, and focus-visible outlines.`,
+          'The "Pay $49.00 Now" button collides with "Cancel subscription" and extends past the card container, while the cancel button text fails contrast.',
+        fixPrompt: `Place "Cancel subscription" and "Pay $49.00 Now" inside a responsive flex container with gap-3 and w-full sm:w-auto, and darken the secondary button label to slate-700 for readable contrast.`,
       },
     ],
   };
@@ -593,7 +535,7 @@ export async function analyzeScreenshotLocally(params: {
   if (!params.imageDataUrl.startsWith('data:image/')) {
     throw new Error(
       params.locale === 'fr'
-        ? 'Veuillez importer une capture PNG, JPEG ou WebP valide.'
+        ? 'Importe une capture PNG, JPEG ou WebP valide.'
         : 'Please upload a valid PNG, JPEG, or WebP screenshot.'
     );
   }
@@ -637,12 +579,12 @@ export async function askQAAdvisor(params: {
   messages: Array<{ role: 'user' | 'model'; text: string }>;
   builderContext: BuilderTool;
   locale: Locale;
-}): Promise<string> {
+}): Promise<{ text: string; isExample: boolean }> {
   const latest = params.messages[params.messages.length - 1]?.text.trim() ?? '';
   if (!latest) {
     throw new Error(
       params.locale === 'fr'
-        ? 'Veuillez saisir un message pour démarrer ou poursuivre l’échange.'
+        ? 'Saisis un message pour démarrer ou poursuivre l’échange.'
         : 'Please enter a message to start or continue the conversation.'
     );
   }
@@ -660,11 +602,11 @@ export async function askQAAdvisor(params: {
 
     if (response.ok) {
       const data = (await response.json()) as { reply?: string };
-      if (data.reply) return data.reply;
+      if (data.reply) return { text: data.reply, isExample: false };
     }
 
     if (response.status === 404 || response.status === 503) {
-      return askQAAdvisorFallback(params);
+      return { text: await askQAAdvisorFallback(params), isExample: true };
     }
 
     const errData = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -676,7 +618,7 @@ export async function askQAAdvisor(params: {
     );
   } catch (err) {
     if (err instanceof TypeError) {
-      return askQAAdvisorFallback(params);
+      return { text: await askQAAdvisorFallback(params), isExample: true };
     }
     throw err;
   }

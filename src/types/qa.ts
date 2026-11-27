@@ -29,6 +29,8 @@ export interface ScreenshotAnalysisResult {
   readinessStatus: 'Ready to Ship' | 'Needs Fixes' | 'High Risk';
   checkedArea: string;
   findings: ScreenshotFinding[];
+  /** Résultat préécrit affiché quand l’analyse en direct est indisponible. */
+  isExample?: boolean;
 }
 
 export interface ChatMessage {
@@ -36,6 +38,8 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   timestamp: string;
+  /** Réponse préécrite affichée quand le conseiller en direct est indisponible. */
+  isExample?: boolean;
 }
 
 export interface UtmParams {

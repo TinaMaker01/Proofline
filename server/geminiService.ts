@@ -80,7 +80,7 @@ function formatAIError(err: unknown, locale: ApiLocale): ApiServiceResult {
       body: {
         error:
           locale === 'fr'
-            ? 'Votre clé API Google AI Studio n’a pas pu être vérifiée. Contrôlez GEMINI_API_KEY dans .env.local.'
+            ? 'Ta clé API Google AI Studio n’a pas pu être vérifiée. Contrôle GEMINI_API_KEY dans .env.local.'
             : 'Your Google AI Studio API key could not be verified. Please check GEMINI_API_KEY in .env.local.',
       },
     };
@@ -91,7 +91,7 @@ function formatAIError(err: unknown, locale: ApiLocale): ApiServiceResult {
       body: {
         error:
           locale === 'fr'
-            ? 'Limite de requêtes atteinte pour votre clé API. Patientez quelques instants et réessayez.'
+            ? 'Limite de requêtes atteinte pour ta clé API. Patiente quelques instants et réessaie.'
             : 'Rate limit reached for the current API key. Wait a moment and try again.',
       },
     };
@@ -101,7 +101,7 @@ function formatAIError(err: unknown, locale: ApiLocale): ApiServiceResult {
     body: {
       error:
         locale === 'fr'
-          ? 'La requête d’analyse en direct n’a pas pu aboutir pour le moment. Réessayez dans un instant.'
+          ? 'La requête d’analyse en direct n’a pas pu aboutir pour le moment. Réessaie dans un instant.'
           : 'The live analysis request could not be completed right now. Please try again in a moment.',
     },
   };
@@ -130,7 +130,7 @@ export async function analyzeScreenshotWithGemini(
         body: {
           error:
             locale === 'fr'
-              ? 'Veuillez importer une capture PNG, JPEG ou WebP valide.'
+              ? 'Importe une capture PNG, JPEG ou WebP valide.'
               : 'Please upload a valid PNG, JPEG, or WebP screenshot.',
         },
       };
@@ -294,7 +294,7 @@ export async function chatWithGeminiAdvisor(
         body: {
           error:
             locale === 'fr'
-              ? 'Veuillez saisir un message pour démarrer ou poursuivre l’échange.'
+              ? 'Saisis un message pour démarrer ou poursuivre l’échange.'
               : 'Please enter a message to start or continue the conversation.',
         },
       };
@@ -364,7 +364,7 @@ export async function chatWithGeminiAdvisor(
         body: {
           error:
             locale === 'fr'
-              ? 'Réponse vide du conseiller. Veuillez réessayer.'
+              ? 'Réponse vide du conseiller. Réessaie.'
               : 'Empty response from assistant. Please ask again.',
         },
       };

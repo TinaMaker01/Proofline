@@ -234,7 +234,7 @@ export async function handleLeadsPost(
       body: {
         error:
           locale === 'fr'
-            ? 'Veuillez saisir une adresse e-mail valide.'
+            ? 'Saisis une adresse e-mail valide.'
             : 'Please enter a valid email address.',
       },
     };
@@ -248,7 +248,7 @@ export async function handleLeadsPost(
         body: {
           error:
             locale === 'fr'
-              ? 'Veuillez accepter la politique de confidentialité pour vous inscrire.'
+              ? 'Accepte la politique de confidentialité pour t’inscrire.'
               : 'Please accept the privacy policy to register.',
         },
       };
@@ -314,7 +314,7 @@ export async function handleLeadsPost(
           body: {
             error:
               locale === 'fr'
-                ? 'Impossible d’enregistrer votre inscription pour le moment.'
+                ? 'Impossible d’enregistrer ton inscription pour le moment.'
                 : 'Could not save your signup right now.',
           },
         };
@@ -363,7 +363,7 @@ export async function handleLeadsPost(
           body: {
             error:
               locale === 'fr'
-                ? 'Veuillez saisir une URL http ou https valide (ex. monapp.lovable.app).'
+                ? 'Saisis une URL http ou https valide (ex. monapp.lovable.app).'
                 : 'Please enter a valid http or https URL (e.g. myapp.lovable.app).',
           },
         };
@@ -374,7 +374,7 @@ export async function handleLeadsPost(
           body: {
             error:
               locale === 'fr'
-                ? 'Veuillez certifier être propriétaire de l’application pour demander un audit.'
+                ? 'Certifie être propriétaire de l’application pour demander un audit.'
                 : 'Please certify that you own this application before requesting an audit.',
           },
         };
@@ -432,7 +432,7 @@ export async function handleLeadsPost(
           body: {
             error:
               locale === 'fr'
-                ? 'Impossible d’enregistrer vos réponses de qualification.'
+                ? 'Impossible d’enregistrer tes réponses de qualification.'
                 : 'Could not save your qualification answers.',
           },
         };

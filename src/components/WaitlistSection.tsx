@@ -162,7 +162,7 @@ export function WaitlistSection({
   }
 
   function handleCopyShareLink() {
-    const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://proofline.app';
+    const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://proofline-rouge.vercel.app';
     navigator.clipboard
       ?.writeText(shareUrl)
       .then(() => {
