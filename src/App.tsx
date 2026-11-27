@@ -8,9 +8,11 @@ import { ProofAndFAQ } from './components/ProofAndFAQ';
 import { WaitlistSection } from './components/WaitlistSection';
 import { Footer } from './components/Footer';
 import { LegalModal, type LegalModalKind } from './components/LegalModal';
+import { PreorderReturnNotice } from './components/PreorderReturnNotice';
 import type { ThemeMode } from './components/ThemeToggle';
+import { ACTIVE_PREORDER } from './config/preorder';
 import type { LeadStep1Response, PricingPlanId } from './types/qa';
-import { fetchLeadCount, trackPricingInterest } from './services/qaClient';
+import { fetchLeadCount, trackPreorderClick, trackPricingInterest } from './services/qaClient';
 import { TRANSLATIONS, type Locale } from './i18n/translations';
 import { captureUtmParams } from './utils/utm';
 
@@ -146,6 +148,15 @@ export default function App() {
     }
   }
 
+  function handlePreorderClick(planId: PricingPlanId) {
+    void trackPreorderClick({
+      planId,
+      email: activeLead?.entry.email,
+      locale,
+      utm,
+    });
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-[#F8FAFC] transition-colors duration-150">
       <a
@@ -163,6 +174,9 @@ export default function App() {
         onJoinWaitlist={handleJoinWaitlist}
       />
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+        {ACTIVE_PREORDER && (
+          <PreorderReturnNotice locale={locale} config={ACTIVE_PREORDER} />
+        )}
         <HeroSection
           locale={locale}
           t={t}
@@ -178,7 +192,10 @@ export default function App() {
         <CapabilitiesBento t={t} />
         <LiveQAStudio locale={locale} t={t} />
         <ProofAndFAQ
+          locale={locale}
           t={t}
+          onPreorderClick={handlePreorderClick}
+          onOpenLegal={setLegalModal}
           interestedPlan={selectedPlan}
           onSelectPricingInterest={handleSelectPricingInterest}
         />
@@ -203,7 +220,12 @@ export default function App() {
         t={t}
         onOpenLegal={setLegalModal}
       />
-      <LegalModal kind={legalModal} onClose={() => setLegalModal(null)} t={t} />
+      <LegalModal
+        kind={legalModal}
+        onClose={() => setLegalModal(null)}
+        locale={locale}
+        t={t}
+      />
     </div>
   );
 }

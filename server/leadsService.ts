@@ -16,6 +16,7 @@ const VALID_DATABASES = new Set(['Supabase', 'Firebase', 'Other', 'Unknown']);
 const VALID_USER_SCALES = new Set(['0', '1-50', '51-500', '500+']);
 const VALID_PLANS = new Set(['one-time', 'monthly', 'agency']);
 const VALID_BUDGETS = new Set(['<20', '20-49', '50-99', '100+']);
+const VALID_EVENTS = new Set(['pricing_interest', 'preorder_click']);
 
 function readEnv(override?: LeadsEnv): Required<LeadsEnv> {
   return {
@@ -183,9 +184,12 @@ export async function handleLeadsPost(
   const env = readEnv(envOverride);
   const hasSupabase = Boolean(env.supabaseUrl && env.supabaseServiceKey);
 
-  // Pricing interest or CTA click event
+  // Pricing interest or preorder click event
   if (action === 'event') {
     const eventType = pickStr(body.eventType, 60) || 'pricing_interest';
+    if (!VALID_EVENTS.has(eventType)) {
+      return { status: 400, body: { ok: false, error: 'Unsupported event type' } };
+    }
     const planId = typeof body.planId === 'string' && VALID_PLANS.has(body.planId) ? body.planId : null;
     const email = pickStr(body.email, 254)?.toLowerCase() || null;
 
@@ -197,7 +201,7 @@ export async function handleLeadsPost(
     }
 
     try {
-      await supabaseRequest(env, 'proofline_events', {
+      const eventRes = await supabaseRequest(env, 'proofline_events', {
         method: 'POST',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({
@@ -210,6 +214,9 @@ export async function handleLeadsPost(
           utm_campaign: pickStr(body.utmCampaign, 120),
         }),
       });
+      if (!eventRes.ok) {
+        return { status: 502, body: { ok: false, error: 'Failed to record event' } };
+      }
       return { status: 201, body: { ok: true, configured: true } };
     } catch {
       return { status: 502, body: { ok: false, error: 'Failed to record event' } };

@@ -266,14 +266,19 @@ export async function submitLeadStep2(
   return { persistenceMode: 'local', updatedLead };
 }
 
-export async function trackPricingInterest(params: {
+interface PlanEventParams {
   planId: PricingPlanId;
   email?: string;
   locale: Locale;
   utm?: UtmParams;
-}): Promise<void> {
+}
+
+async function trackPlanEvent(
+  eventType: 'pricing_interest' | 'preorder_click',
+  params: PlanEventParams
+): Promise<void> {
   appendStoredEvent({
-    eventType: 'pricing_interest',
+    eventType,
     planId: params.planId,
     email: params.email,
     utm: params.utm,
@@ -284,9 +289,11 @@ export async function trackPricingInterest(params: {
     await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      // La précommande quitte la page : la requête doit survivre à la navigation.
+      keepalive: true,
       body: JSON.stringify({
         action: 'event',
-        eventType: 'pricing_interest',
+        eventType,
         planId: params.planId,
         email: params.email,
         locale: params.locale,
@@ -296,6 +303,14 @@ export async function trackPricingInterest(params: {
   } catch {
     // Non-blocking analytics event
   }
+}
+
+export function trackPricingInterest(params: PlanEventParams): Promise<void> {
+  return trackPlanEvent('pricing_interest', params);
+}
+
+export function trackPreorderClick(params: PlanEventParams): Promise<void> {
+  return trackPlanEvent('preorder_click', params);
 }
 
 function wait(ms: number): Promise<void> {

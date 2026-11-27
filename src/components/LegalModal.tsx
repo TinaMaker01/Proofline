@@ -1,16 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import type { SiteTranslations } from '../i18n/translations';
+import { ACTIVE_PREORDER } from '../config/preorder';
+import { PREORDER_TRANSLATIONS } from '../i18n/preorderTranslations';
+import type { Locale, SiteTranslations } from '../i18n/translations';
 
-export type LegalModalKind = 'legal' | 'privacy' | 'contact' | null;
+export type LegalModalKind = 'legal' | 'privacy' | 'contact' | 'terms' | 'refund' | null;
 
 interface LegalModalProps {
   kind: LegalModalKind;
   onClose: () => void;
+  locale: Locale;
   t: SiteTranslations;
 }
 
-export function LegalModal({ kind, onClose, t }: LegalModalProps) {
+export function LegalModal({ kind, onClose, locale, t }: LegalModalProps) {
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -28,19 +31,34 @@ export function LegalModal({ kind, onClose, t }: LegalModalProps) {
 
   if (!kind) return null;
 
-  const title =
-    kind === 'legal'
-      ? t.legalModals.legalTitle
-      : kind === 'privacy'
-        ? t.legalModals.privacyTitle
-        : t.legalModals.contactTitle;
+  const p = PREORDER_TRANSLATIONS[locale];
+  let title: string;
+  let paragraphs: string[];
 
-  const paragraphs =
-    kind === 'legal'
-      ? t.legalModals.legalBody
-      : kind === 'privacy'
-        ? t.legalModals.privacyBody
-        : t.legalModals.contactBody;
+  switch (kind) {
+    case 'legal':
+      title = t.legalModals.legalTitle;
+      paragraphs = t.legalModals.legalBody;
+      break;
+    case 'privacy':
+      title = t.legalModals.privacyTitle;
+      paragraphs = ACTIVE_PREORDER
+        ? [...t.legalModals.privacyBody, p.privacyAddendum(ACTIVE_PREORDER.providerName)]
+        : t.legalModals.privacyBody;
+      break;
+    case 'contact':
+      title = t.legalModals.contactTitle;
+      paragraphs = t.legalModals.contactBody;
+      break;
+    case 'terms':
+    case 'refund':
+      // Ces pages n'existent que lorsque la précommande est activée.
+      if (!ACTIVE_PREORDER) return null;
+      title = kind === 'terms' ? p.termsTitle : p.refundTitle;
+      paragraphs =
+        kind === 'terms' ? p.termsBody(ACTIVE_PREORDER) : p.refundBody(ACTIVE_PREORDER);
+      break;
+  }
 
   return (
     <div
@@ -52,7 +70,7 @@ export function LegalModal({ kind, onClose, t }: LegalModalProps) {
         aria-modal="true"
         aria-labelledby="legal-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 sm:p-7 shadow-xl"
+        className="w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 sm:p-7 shadow-xl"
       >
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <h2
