@@ -110,5 +110,15 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss(), prooflineDevApiPlugin(serverApiKey, leadsEnv)],
+    build: {
+      rolldownOptions: {
+        output: {
+          // Third-party code goes in its own chunk, cached separately from app code.
+          codeSplitting: {
+            groups: [{ name: 'vendor', test: /node_modules[\\/]/ }],
+          },
+        },
+      },
+    },
   };
 });
