@@ -42,6 +42,12 @@ export interface ChatMessage {
   isExample?: boolean;
 }
 
+/** Suivi d’un clic « Ça m’intéresse », jusqu’à la réponse du serveur. */
+export interface PricingInterest {
+  planId: PricingPlanId;
+  status: 'pending' | 'recorded' | 'failed';
+}
+
 export interface UtmParams {
   utmSource?: string;
   utmMedium?: string;

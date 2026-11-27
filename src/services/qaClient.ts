@@ -239,7 +239,7 @@ interface PlanEventParams {
 async function trackPlanEvent(
   eventType: 'pricing_interest' | 'preorder_click',
   params: PlanEventParams
-): Promise<void> {
+): Promise<boolean> {
   appendStoredEvent({
     eventType,
     planId: params.planId,
@@ -249,11 +249,13 @@ async function trackPlanEvent(
   });
 
   try {
-    await fetch('/api/leads', {
+    const res = await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // La précommande quitte la page : la requête doit survivre à la navigation.
       keepalive: true,
+      // Sans réponse, le bouton resterait bloqué sur « Enregistrement ».
+      signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         action: 'event',
         eventType,
@@ -263,16 +265,19 @@ async function trackPlanEvent(
         ...params.utm,
       }),
     });
+    return res.ok;
   } catch {
-    // Non-blocking analytics event
+    return false;
   }
 }
 
-export function trackPricingInterest(params: PlanEventParams): Promise<void> {
+/** Renvoie `true` seulement si le serveur confirme l’enregistrement. */
+export function trackPricingInterest(params: PlanEventParams): Promise<boolean> {
   return trackPlanEvent('pricing_interest', params);
 }
 
-export function trackPreorderClick(params: PlanEventParams): Promise<void> {
+/** La précommande n’attend pas le résultat : la mesure ne bloque pas l’achat. */
+export function trackPreorderClick(params: PlanEventParams): Promise<boolean> {
   return trackPlanEvent('preorder_click', params);
 }
 

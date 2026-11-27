@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ChevronDown, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { ACTIVE_PREORDER } from '../config/preorder';
 import { PREORDER_TRANSLATIONS } from '../i18n/preorderTranslations';
 import type { Locale, SiteTranslations } from '../i18n/translations';
-import type { PricingPlanId } from '../types/qa';
+import type { PricingInterest, PricingPlanId } from '../types/qa';
 import type { LegalModalKind } from './LegalModal';
 import { PreorderOfferBox } from './PreorderOfferBox';
 
@@ -12,7 +12,7 @@ interface ProofAndFAQProps {
   t: SiteTranslations;
   onPreorderClick: (planId: PricingPlanId) => void;
   onOpenLegal: (kind: LegalModalKind) => void;
-  interestedPlan: PricingPlanId | null;
+  pricingInterest: PricingInterest | null;
   onSelectPricingInterest: (planId: PricingPlanId) => void;
 }
 
@@ -21,7 +21,7 @@ export function ProofAndFAQ({
   t,
   onPreorderClick,
   onOpenLegal,
-  interestedPlan,
+  pricingInterest,
   onSelectPricingInterest,
 }: ProofAndFAQProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
@@ -92,7 +92,8 @@ export function ProofAndFAQ({
 
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {t.proofPricingFaq.pricingPlans.map((plan) => {
-              const isSelected = interestedPlan === plan.id;
+              const status = pricingInterest?.planId === plan.id ? pricingInterest.status : null;
+              const isSelected = status === 'recorded';
               const offer = ACTIVE_PREORDER?.offers[plan.id];
               return (
                 <article
@@ -140,14 +141,29 @@ export function ProofAndFAQ({
                       type="button"
                       onClick={() => onSelectPricingInterest(plan.id)}
                       aria-pressed={isSelected}
-                      className={`w-full px-4 py-3 min-h-[44px] text-sm font-medium rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
+                      // `aria-disabled` plutôt que `disabled` : le focus clavier reste en place.
+                      aria-disabled={pricingInterest?.status === 'pending'}
+                      className={`aria-disabled:opacity-60 aria-disabled:cursor-wait w-full px-4 py-3 min-h-[44px] text-sm font-medium rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                         isSelected
                           ? 'bg-emerald-700 dark:bg-emerald-600 text-white'
                           : 'bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] text-white'
                       }`}
                     >
-                      {isSelected ? plan.ctaRecorded : plan.cta}
+                      {isSelected
+                        ? plan.ctaRecorded
+                        : status === 'pending'
+                          ? t.proofPricingFaq.interestPending
+                          : plan.cta}
                     </button>
+                    {status === 'failed' && (
+                      <p
+                        role="alert"
+                        className="mt-2 flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+                        <span>{t.proofPricingFaq.interestError}</span>
+                      </p>
+                    )}
                     {ACTIVE_PREORDER && offer && (
                       <PreorderOfferBox
                         locale={locale}

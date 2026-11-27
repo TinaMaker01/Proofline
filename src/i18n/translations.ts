@@ -217,6 +217,8 @@ export interface SiteTranslations {
     pricingHeading: string;
     pricingSubheading: string;
     pricingDisclaimer: string;
+    interestPending: string;
+    interestError: string;
     pricingPlans: Array<{
       id: PricingPlanId;
       name: string;
@@ -629,6 +631,8 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       pricingHeading: 'Tarifs indicatifs envisagés',
       pricingSubheading:
         'Ces formules sont en cours de test pour orienter le produit : cliquer sur « Ça m’intéresse » enregistre simplement ton intérêt, sans aucun paiement.',
+      interestPending: 'Enregistrement...',
+      interestError: 'Ton intérêt n’a pas été enregistré. Réessaie dans un instant.',
       pricingDisclaimer: 'Montants indicatifs à l’étude — aucun paiement demandé pendant la bêta.',
       pricingPlans: [
         {
@@ -1137,6 +1141,8 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       pricingHeading: 'Indicative plans under consideration',
       pricingSubheading:
         'We are testing which pricing fits best before launch. Clicking “I’m interested” only logs interest—no payment is collected.',
+      interestPending: 'Saving...',
+      interestError: 'Your interest was not saved. Please try again in a moment.',
       pricingDisclaimer: 'Indicative pricing test only — free during validation.',
       pricingPlans: [
         {

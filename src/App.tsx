@@ -11,7 +11,7 @@ import { LegalModal, type LegalModalKind } from './components/LegalModal';
 import { PreorderReturnNotice } from './components/PreorderReturnNotice';
 import type { ThemeMode } from './components/ThemeToggle';
 import { ACTIVE_PREORDER } from './config/preorder';
-import type { LeadStep1Response, PricingPlanId } from './types/qa';
+import type { LeadStep1Response, PricingInterest, PricingPlanId } from './types/qa';
 import { fetchLeadCount, trackPreorderClick, trackPricingInterest } from './services/qaClient';
 import { TRANSLATIONS, type Locale } from './i18n/translations';
 import { captureUtmParams } from './utils/utm';
@@ -52,6 +52,8 @@ export default function App() {
   const [locale, setLocale] = useState<Locale>(getInitialLocale);
   const [activeLead, setActiveLead] = useState<LeadStep1Response | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<PricingPlanId | null>(null);
+  const [pricingInterest, setPricingInterest] = useState<PricingInterest | null>(null);
+  const interestPendingRef = useRef(false);
   const [leadCount, setLeadCount] = useState<number | null>(null);
   const [legalModal, setLegalModal] = useState<LegalModalKind>(null);
 
@@ -128,14 +130,21 @@ export default function App() {
     setActiveLead(null);
   }
 
-  function handleSelectPricingInterest(planId: PricingPlanId) {
+  async function handleSelectPricingInterest(planId: PricingPlanId) {
+    if (interestPendingRef.current) return;
+    interestPendingRef.current = true;
     setSelectedPlan(planId);
-    void trackPricingInterest({
+    setPricingInterest({ planId, status: 'pending' });
+    const recorded = await trackPricingInterest({
       planId,
       email: activeLead?.entry.email,
       locale,
       utm,
     });
+    interestPendingRef.current = false;
+    setPricingInterest({ planId, status: recorded ? 'recorded' : 'failed' });
+    // En cas d’échec, le visiteur reste devant le message et peut réessayer.
+    if (!recorded) return;
     scrollToSection('waitlist');
     if (!activeLead) {
       if (focusTimerRef.current !== null) {
@@ -196,7 +205,7 @@ export default function App() {
           t={t}
           onPreorderClick={handlePreorderClick}
           onOpenLegal={setLegalModal}
-          interestedPlan={selectedPlan}
+          pricingInterest={pricingInterest}
           onSelectPricingInterest={handleSelectPricingInterest}
         />
         <WaitlistSection
