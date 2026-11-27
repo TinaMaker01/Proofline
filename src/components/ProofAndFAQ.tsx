@@ -1,20 +1,35 @@
 import { useState } from 'react';
 import { ChevronDown, CheckCircle2, ShieldCheck } from 'lucide-react';
-import type { SiteTranslations } from '../i18n/translations';
+import { ACTIVE_PREORDER } from '../config/preorder';
+import { PREORDER_TRANSLATIONS } from '../i18n/preorderTranslations';
+import type { Locale, SiteTranslations } from '../i18n/translations';
 import type { PricingPlanId } from '../types/qa';
+import type { LegalModalKind } from './LegalModal';
+import { PreorderOfferBox } from './PreorderOfferBox';
 
 interface ProofAndFAQProps {
+  locale: Locale;
   t: SiteTranslations;
+  onPreorderClick: (planId: PricingPlanId) => void;
+  onOpenLegal: (kind: LegalModalKind) => void;
   interestedPlan: PricingPlanId | null;
   onSelectPricingInterest: (planId: PricingPlanId) => void;
 }
 
 export function ProofAndFAQ({
+  locale,
   t,
+  onPreorderClick,
+  onOpenLegal,
   interestedPlan,
   onSelectPricingInterest,
 }: ProofAndFAQProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  // Les mentions « aucun paiement » ne sont remplacées que si un achat est réellement proposé.
+  const preorderCopy =
+    ACTIVE_PREORDER && Object.keys(ACTIVE_PREORDER.offers).length > 0
+      ? PREORDER_TRANSLATIONS[locale]
+      : null;
 
   return (
     <>
@@ -79,17 +94,21 @@ export function ProofAndFAQ({
               {t.proofPricingFaq.pricingHeading}
             </h2>
             <p className="mt-3 max-w-[54ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-              {t.proofPricingFaq.pricingSubheading}
+              {preorderCopy?.pricingSubheading ?? t.proofPricingFaq.pricingSubheading}
             </p>
           </div>
 
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {t.proofPricingFaq.pricingPlans.map((plan) => {
               const isSelected = interestedPlan === plan.id;
+              const offer = ACTIVE_PREORDER?.offers[plan.id];
               return (
                 <article
                   key={plan.id}
-                  className={`p-7 rounded-xl border flex flex-col justify-between transition-colors ${
+                  className={`p-7 rounded-xl border flex flex-col transition-colors ${
+                    // Avec des encadrés précommande de hauteurs inégales, les boutons suivent la liste.
+                    preorderCopy ? 'justify-start' : 'justify-between'
+                  } ${
                     isSelected
                       ? 'bg-white dark:bg-[#161F33] border-[#1E40AF] dark:border-[#3B82F6]'
                       : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800'
@@ -124,25 +143,38 @@ export function ProofAndFAQ({
                     </ul>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onSelectPricingInterest(plan.id)}
-                    aria-pressed={isSelected}
-                    className={`mt-8 w-full px-4 py-3 min-h-[44px] text-sm font-medium rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
-                      isSelected
-                        ? 'bg-emerald-700 dark:bg-emerald-600 text-white'
-                        : 'bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] text-white'
-                    }`}
-                  >
-                    {isSelected ? plan.ctaRecorded : plan.cta}
-                  </button>
+                  <div className="mt-8">
+                    <button
+                      type="button"
+                      onClick={() => onSelectPricingInterest(plan.id)}
+                      aria-pressed={isSelected}
+                      className={`w-full px-4 py-3 min-h-[44px] text-sm font-medium rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
+                        isSelected
+                          ? 'bg-emerald-700 dark:bg-emerald-600 text-white'
+                          : 'bg-[#1E40AF] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#3B82F6] text-white'
+                      }`}
+                    >
+                      {isSelected ? plan.ctaRecorded : plan.cta}
+                    </button>
+                    {ACTIVE_PREORDER && offer && (
+                      <PreorderOfferBox
+                        locale={locale}
+                        planId={plan.id}
+                        planName={plan.name}
+                        config={ACTIVE_PREORDER}
+                        offer={offer}
+                        onPreorderClick={onPreorderClick}
+                        onOpenLegal={onOpenLegal}
+                      />
+                    )}
+                  </div>
                 </article>
               );
             })}
           </div>
 
           <p className="mt-6 text-xs text-slate-600 dark:text-slate-400">
-            {t.proofPricingFaq.pricingDisclaimer}
+            {preorderCopy?.pricingDisclaimer ?? t.proofPricingFaq.pricingDisclaimer}
           </p>
         </div>
       </section>

@@ -52,6 +52,14 @@ Ce dépôt contient le frontend **TypeScript + Vite** (React 19, Tailwind CSS v4
 1. Déployez le dépôt sur Vercel (Vite + dossier `/api` détectés automatiquement).
 2. Ajoutez vos variables d’environnement (`GEMINI_API_KEY`, et optionnellement `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`) dans **Project Settings → Environment Variables**.
 
+## Précommande (module optionnel, désactivé par défaut)
+
+La précommande remboursable (cahier des charges §6.6) reste invisible tant que [src/config/preorder.ts](src/config/preorder.ts) est incomplet. La procédure d’activation est décrite en tête de ce fichier. Avant activation, faites relire les CGV et la politique de remboursement dans [src/i18n/preorderTranslations.ts](src/i18n/preorderTranslations.ts).
+
+- Aucune donnée de carte ne transite par le site : le bouton mène au lien de paiement hébergé du prestataire.
+- Les clics sont enregistrés comme événements `preorder_click` dans `proofline_events`.
+- Les paiements aboutis, abandonnés et remboursés se suivent dans le tableau de bord du prestataire (pas de webhook).
+
 ## Scripts disponibles
 
 | Commande | Description |

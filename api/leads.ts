@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { handleLeadsGet, handleLeadsPost } from '../server/leadsService';
+import { handleLeadsGet, handleLeadsPost } from '../server/leadsService.js';
 
 interface ServerlessRequest extends IncomingMessage {
   body?: unknown;

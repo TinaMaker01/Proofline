@@ -1,5 +1,7 @@
 import { ThemeToggle, type ThemeMode } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
+import { ACTIVE_PREORDER } from '../config/preorder';
+import { PREORDER_TRANSLATIONS } from '../i18n/preorderTranslations';
 import type { Locale, SiteTranslations } from '../i18n/translations';
 import type { LegalModalKind } from './LegalModal';
 
@@ -48,6 +50,17 @@ export function Footer({
           >
             {t.footer.privacy}
           </button>
+          {ACTIVE_PREORDER &&
+            (['terms', 'refund'] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => onOpenLegal(kind)}
+                className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+              >
+                {PREORDER_TRANSLATIONS[locale][kind === 'terms' ? 'termsLink' : 'refundLink']}
+              </button>
+            ))}
           <button
             type="button"
             onClick={() => onOpenLegal('contact')}
