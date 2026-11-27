@@ -24,9 +24,9 @@ export function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '#problem', label: t.nav.problem },
-    { href: '#how-it-works', label: t.nav.howItWorks },
     { href: '#live-audit', label: t.nav.liveAudit },
+    { href: '#how-it-works', label: t.nav.howItWorks },
+    { href: '#sample-report', label: t.nav.report },
     { href: '#pricing', label: t.nav.pricing },
     { href: '#faq', label: t.nav.faq },
   ];

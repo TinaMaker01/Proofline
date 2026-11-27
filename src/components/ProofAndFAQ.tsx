@@ -51,32 +51,24 @@ export function ProofAndFAQ({
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ul className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
             {t.proofPricingFaq.trustCards.map((card) => (
-              <article
-                key={card.title}
-                className="p-7 bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col justify-between gap-4"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <ShieldCheck
-                      className="w-5 h-5 text-[#1E40AF] dark:text-[#60A5FA] shrink-0"
-                      aria-hidden="true"
-                    />
-                    <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
-                      {card.metric}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 font-display text-lg font-semibold text-slate-900 dark:text-[#F8FAFC]">
+              <li key={card.title} className="flex items-start gap-3.5">
+                <ShieldCheck
+                  className="w-5 h-5 mt-0.5 text-[#1E40AF] dark:text-[#60A5FA] shrink-0"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0">
+                  <h3 className="font-display text-base font-semibold text-slate-900 dark:text-[#F8FAFC]">
                     {card.title}
                   </h3>
-                  <p className="mt-2.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     {card.detail}
                   </p>
                 </div>
-              </article>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 

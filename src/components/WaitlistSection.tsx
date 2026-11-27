@@ -30,6 +30,9 @@ interface WaitlistSectionProps {
 
 const BUILDER_TOOLS: BuilderTool[] = ['Lovable', 'Bolt', 'Cursor', 'Replit', 'v0', 'Other'];
 
+// En dessous de ce seuil, le compteur d’inscrits dessert la page plus qu’il ne rassure.
+const MIN_VISIBLE_LEAD_COUNT = 20;
+
 export function WaitlistSection({
   locale,
   t,
@@ -203,7 +206,7 @@ export function WaitlistSection({
                 </span>{' '}
                 {t.funnel.benefitsBody}
               </p>
-              {leadCount !== null && leadCount > 0 && (
+              {leadCount !== null && leadCount >= MIN_VISIBLE_LEAD_COUNT && (
                 <p className="text-xs text-slate-600 dark:text-slate-400 tabular-nums">
                   {t.funnel.countLabel(leadCount)}
                 </p>

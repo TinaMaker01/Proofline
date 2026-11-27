@@ -26,7 +26,7 @@ export interface SiteTranslations {
   nav: {
     primaryAria: string;
     mobileAria: string;
-    problem: string;
+    report: string;
     howItWorks: string;
     liveAudit: string;
     pricing: string;
@@ -78,55 +78,40 @@ export interface SiteTranslations {
       location: string;
     }>;
   };
-  problemSolution: {
-    problemHeading: string;
-    problemSubheading: string;
-    fears: Array<{
-      title: string;
-      description: string;
-    }>;
-    solutionHeading: string;
-    solutionSteps: Array<{
-      title: string;
-      description: string;
-    }>;
-    audienceHeading: string;
-    audiences: Array<{
-      title: string;
-      description: string;
-    }>;
-  };
-  bento: {
+  howItWorks: {
     heading: string;
     subheading: string;
-    flowTitle: string;
-    flowDesc: string;
-    flowSteps: Array<{
-      step: string;
-      desktop: string;
-      mobile: string;
-      status: 'pass' | 'warn';
+    detectHeading: string;
+    detections: Array<{ title: string; description: string }>;
+    stepsHeading: string;
+    steps: Array<{ title: string; description: string }>;
+    audienceHeading: string;
+    audiences: Array<{ title: string; description: string }>;
+  };
+  sampleReport: {
+    heading: string;
+    intro: string;
+    openLabel: string;
+    closeLabel: string;
+    appLabel: string;
+    summary: string;
+    evidenceLabel: string;
+    impactLabel: string;
+    fixLabel: string;
+    findings: Array<{
+      severity: FindingSeverity;
+      title: string;
+      evidence: string;
+      impact: string;
+      fix: string;
     }>;
-    guardTitle: string;
-    guardDesc: string;
-    guardItems: Array<{
-      label: string;
-      tag: string;
-    }>;
-    promptTitle: string;
-    promptDesc: string;
-    samplePromptLabel: string;
-    samplePromptBody: string;
-    shieldTitle: string;
-    shieldDesc: string;
-    shieldDiffs: Array<{
-      check: string;
-      baselineLabel: string;
-      baseline: string;
-      previewLabel: string;
-      preview: string;
-      status: 'pass' | 'fail';
-    }>;
+    flowHeading: string;
+    flowSteps: Array<{ step: string; desktop: string; mobile: string; status: 'pass' | 'warn' }>;
+    diffHeading: string;
+    beforeLabel: string;
+    afterLabel: string;
+    diffs: Array<{ check: string; before: string; after: string; status: 'pass' | 'fail' }>;
+    limits: string;
   };
   studio: {
     badge: string;
@@ -220,7 +205,6 @@ export interface SiteTranslations {
     trustSubheading: string;
     trustCards: Array<{
       title: string;
-      metric: string;
       detail: string;
     }>;
     pricingHeading: string;
@@ -326,7 +310,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     nav: {
       primaryAria: 'Navigation principale',
       mobileAria: 'Navigation mobile',
-      problem: 'Problème',
+      report: 'Exemple',
       howItWorks: 'Fonctionnement',
       liveAudit: 'Démo',
       pricing: 'Tarifs',
@@ -394,134 +378,115 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         },
       ],
     },
-    problemSolution: {
-      problemHeading: 'Tu livres vite. Mais est-ce que tout tient vraiment en production ?',
-      problemSubheading:
-        'Les outils comme Lovable, Bolt, Cursor et Replit génèrent une app en quelques heures—sans vérifier ce qui reste ouvert ou ce qui casse après coup.',
-      fears: [
+    howItWorks: {
+      heading: 'Tu livres vite. Mais est-ce que tout tient vraiment en production ?',
+      subheading:
+        'Lovable, Bolt, Cursor et Replit génèrent une app en quelques heures, sans vérifier ce qui reste ouvert ni ce qui casse après coup.',
+      detectHeading: 'Ce que nous détectons',
+      detections: [
         {
-          title: 'Tu modifies ton app avec l’IA… et quelque chose casse sans que tu le saches.',
+          title: 'Clés et données exposées',
           description:
-            'Corriger un texte ou un bouton sur la page d’accueil peut bloquer l’inscription ou le paiement Stripe sans aucun message d’erreur visible.',
+            'Clés API dans le code du navigateur, tables Supabase ou Firebase sans règles d’accès, formulaires sans protection.',
         },
         {
-          title: 'Tes clés API et ta base de données sont-elles visibles par n’importe qui ?',
+          title: 'Parcours cassés',
           description:
-            'Sans règles d’accès strictes (RLS Supabase ou règles Firebase), n’importe quel visiteur curieux peut lire les données de tes utilisateurs.',
+            'Inscription, connexion, formulaires et paiement Stripe vérifiés sur ordinateur et mobile.',
         },
         {
-          title: 'Tu n’as pas de développeur pour vérifier.',
+          title: 'Régressions après modification',
           description:
-            'Lire des traces TypeScript ou auditer les requêtes réseau demande un œil technique que tu ne devrais pas avoir à embaucher pour chaque mise à jour.',
+            'Ton dernier aperçu comparé à la version qui fonctionnait : variable d’environnement oubliée, appel API en erreur.',
+        },
+        {
+          title: 'Correctifs sans jargon',
+          description:
+            'Chaque problème arrive avec sa gravité, son impact et un prompt prêt à coller dans ton outil.',
         },
       ],
-      solutionHeading: 'Comment ça marche en 3 étapes',
-      solutionSteps: [
+      stepsHeading: 'Comment ça marche en 3 étapes',
+      steps: [
         {
           title: '1. Tu nous indiques ton app',
           description:
-            'Renseigne ton lien de prévisualisation (en certifiant en être propriétaire) ou dépose une capture d’écran.',
+            'Ton lien de prévisualisation, avec ta certification de propriété, ou une capture d’écran.',
         },
         {
-          title: '2. Nous effectuons des vérifications passives',
-          description:
-            'Contrôles non destructeurs des clés exposées, règles d’accès base de données, formulaires et parcours critiques.',
+          title: '2. Nous vérifions sans rien casser',
+          description: 'Des contrôles passifs des clés, des règles d’accès et des parcours critiques.',
         },
         {
-          title: '3. Tu reçois un rapport clair avec les correctifs',
-          description:
-            'Chaque problème est expliqué en français simple avec le prompt exact à coller dans Lovable, Bolt, Cursor ou Replit.',
+          title: '3. Tu reçois un rapport clair',
+          description: 'En français simple, avec les correctifs à coller.',
         },
       ],
       audienceHeading: 'Pour qui ?',
       audiences: [
         {
           title: 'Créateurs sur Lovable, Bolt, Replit & Cursor',
-          description:
-            'Tu as déjà de vrais utilisateurs ou premiers clients sur Supabase/Firebase + Stripe et tu veux avancer sans mauvaise surprise.',
+          description: 'Tu as déjà des utilisateurs sur Supabase ou Firebase, avec Stripe.',
         },
         {
           title: 'Freelances livrant des apps IA',
-          description:
-            'Tu veux un contrôle sécurité et qualité rapide avant de remettre l’app à ton client pour éviter les retours urgents.',
+          description: 'Tu veux un contrôle avant de remettre l’app à ton client.',
         },
         {
           title: 'Fondateurs sans équipe technique',
-          description:
-            'Tu fais évoluer ton produit chaque semaine et tu veux savoir immédiatement si une donnée reste exposée.',
+          description: 'Tu fais évoluer ton produit chaque semaine sans développeur pour relire.',
         },
       ],
     },
-    bento: {
-      heading: 'Ce que nous détectons sur ton application.',
-      subheading:
-        'Des vérifications ciblées sur les failles les plus fréquentes des applications générées par IA, avec des actions concrètes.',
-      flowTitle: 'Parcours critiques cassés',
-      flowDesc:
-        'Création de compte, connexion, formulaires et paiement Stripe vérifiés sur ordinateur et mobile pour détecter un bouton mort ou une redirection bloquée.',
+    sampleReport: {
+      heading: 'Voici à quoi ressemble un rapport.',
+      intro:
+        'L’application et les résultats ci-dessous sont fictifs. Ils montrent la forme du rapport.',
+      openLabel: 'Ouvrir le rapport d’exemple',
+      closeLabel: 'Fermer le rapport d’exemple',
+      appLabel: 'Exemple fictif · pay-beta.my-bolt-app.com',
+      summary:
+        '2 problèmes critiques et 1 point d’attention. Priorité : retirer la clé secrète du navigateur et fermer l’accès à la table users avant de partager le lien.',
+      evidenceLabel: 'Constat :',
+      impactLabel: 'Conséquence :',
+      fixLabel: 'Prompt correctif',
+      findings: [
+        {
+          severity: 'Critical',
+          title: 'Clé secrète Stripe visible dans le navigateur',
+          evidence: 'STRIPE_SECRET présente dans le code JavaScript (CheckoutForm.tsx:142).',
+          impact: 'Un visiteur peut s’en servir pour agir sur ton compte Stripe.',
+          fix: 'Révoque la clé secrète Stripe, puis déplace tous les appels qui l’utilisent dans une route serveur /api/checkout.',
+        },
+        {
+          severity: 'Critical',
+          title: 'La table users est lisible sans connexion',
+          evidence: 'RLS désactivé : 1 482 lignes renvoyées à un visiteur non connecté.',
+          impact: 'Les données de tes utilisateurs sont exposées.',
+          fix: 'Active Row Level Security sur public.users et limite la lecture et la modification à auth.uid() = id.',
+        },
+        {
+          severity: 'Warning',
+          title: 'Bouton Payer coupé sur mobile',
+          evidence: 'À 390 px de large, le bouton sort de l’écran depuis la dernière modification.',
+          impact: 'Un client sur téléphone peut ne pas réussir à payer.',
+          fix: 'Place les boutons dans un conteneur flex responsive (gap-3, w-full sm:w-auto) et vérifie le paiement à 390 px.',
+        },
+      ],
+      flowHeading: 'Parcours vérifiés',
       flowSteps: [
-        {
-          step: 'Inscription (/signup)',
-          desktop: '200 OK · 1,1 s',
-          mobile: '200 OK',
-          status: 'pass',
-        },
-        {
-          step: 'Vérification session',
-          desktop: 'JWT isolé',
-          mobile: 'JWT isolé',
-          status: 'pass',
-        },
-        {
-          step: 'Paiement Stripe',
-          desktop: '200 OK · 1,4 s',
-          mobile: 'Bouton coupé à 390px',
-          status: 'warn',
-        },
+        { step: 'Inscription (/signup)', desktop: '200 OK', mobile: '200 OK', status: 'pass' },
+        { step: 'Vérification de session', desktop: 'JWT isolé', mobile: 'JWT isolé', status: 'pass' },
+        { step: 'Paiement Stripe', desktop: '200 OK', mobile: 'Bouton coupé', status: 'warn' },
       ],
-      guardTitle: 'Expositions & données sensibles',
-      guardDesc:
-        'Repérage des clés API publiques dans le bundle client, tables Supabase/Firebase sans règles RLS, données d’autres utilisateurs accessibles et formulaires sans protection.',
-      guardItems: [
-        { label: 'Clés API dans le code navigateur', tag: 'Client JS' },
-        { label: 'Règles d’accès base de données', tag: 'Supabase & Firebase' },
-        { label: 'Données croisées & routes ouvertes', tag: 'Auth & API' },
+      diffHeading: 'Avant et après la dernière modification',
+      beforeLabel: 'Avant :',
+      afterLabel: 'Après :',
+      diffs: [
+        { check: 'Redirection après connexion', before: '200 OK', after: '200 OK', status: 'pass' },
+        { check: 'Secrets dans le code public', before: '0', after: '1', status: 'fail' },
       ],
-      promptTitle: 'Correctifs expliqués sans jargon',
-      promptDesc:
-        'Chaque anomalie détectée s’accompagne de son niveau de gravité, de son impact concret pour tes utilisateurs et d’un prompt correctif prêt à coller.',
-      samplePromptLabel: 'Exemple de prompt correctif',
-      samplePromptBody:
-        '« Déplace l’appel secret Stripe dans une route serveur /api/checkout et exige une session authentifiée avant de renvoyer les factures clients. »',
-      shieldTitle: 'Comparaison avant / après modification',
-      shieldDesc:
-        'Vérification de non-régression entre ta version fonctionnelle et ton dernier aperçu : variables d’environnement oubliées, dépendances vulnérables ou appels API en erreur.',
-      shieldDiffs: [
-        {
-          check: 'Redirection auth (/dashboard)',
-          baselineLabel: 'Version OK',
-          baseline: '200 OK',
-          previewLabel: 'Aperçu',
-          preview: '200 OK',
-          status: 'pass',
-        },
-        {
-          check: 'POST /api/checkout',
-          baselineLabel: 'Version OK',
-          baseline: '200 OK',
-          previewLabel: 'Aperçu',
-          preview: '500 · STRIPE_WEBHOOK_SECRET manquant',
-          status: 'fail',
-        },
-        {
-          check: 'Dépendances & bundle public',
-          baselineLabel: 'Version OK',
-          baseline: '0 secret',
-          previewLabel: 'Aperçu',
-          preview: '0 secret',
-          status: 'pass',
-        },
-      ],
+      limits:
+        'Un audit passif porte uniquement sur ce qui est observable. Il ne garantit pas l’absence d’autres failles.',
     },
     studio: {
       badge: 'Démo interactive',
@@ -637,21 +602,13 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       trustCards: [
         {
           title: 'Vérifications passives uniquement',
-          metric: 'Zéro test intrusif',
           detail:
-            'Nous n’auditons que les applications dont tu certifies être propriétaire. Aucun test destructif ni surcharge sur ton serveur.',
+            'Seulement sur les applications dont tu certifies être propriétaire. Aucun test destructif ni surcharge de ton serveur.',
         },
         {
           title: 'Ce que deviennent tes captures',
-          metric: 'Analyse par Google Gemini',
           detail:
             'Proofline n’enregistre pas tes captures. Elles sont envoyées à Google Gemini pour l’analyse et traitées selon les conditions de Google : masque toute donnée sensible avant l’envoi.',
-        },
-        {
-          title: 'Contrôles adaptés aux stacks IA',
-          metric: 'Lovable · Bolt · Cursor · Replit',
-          detail:
-            'Chaque audit cible les erreurs fréquentes des générateurs IA : clés client exposées, règles Supabase/Firebase trop larges, formulaires ouverts et paiements Stripe.',
         },
       ],
       pricingHeading: 'Tarifs indicatifs envisagés',
@@ -746,7 +703,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       gdprLabelPrefix: 'J’accepte de recevoir des informations sur ce produit et que mes données soient traitées selon la',
       gdprPrivacyLink: 'politique de confidentialité',
       gdprLabelSuffix: '. Je peux me désinscrire à tout moment.',
-      step1Submit: 'Audite mon app gratuitement',
+      step1Submit: 'Recevoir mon audit gratuit',
       step1Submitting: 'Inscription...',
       emailError: 'Saisis une adresse e-mail valide.',
       gdprError: 'Coche la case d’accord RGPD pour continuer.',
@@ -856,7 +813,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     nav: {
       primaryAria: 'Primary',
       mobileAria: 'Mobile navigation',
-      problem: 'Problem',
+      report: 'Example',
       howItWorks: 'How it works',
       liveAudit: 'Live Demo',
       pricing: 'Pricing',
@@ -924,124 +881,112 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
         },
       ],
     },
-    problemSolution: {
-      problemHeading: 'You ship fast. But does everything hold up in production?',
-      problemSubheading:
-        'Tools like Lovable, Bolt, Cursor, and Replit build working apps in hours—without checking what stays exposed or what breaks silently.',
-      fears: [
+    howItWorks: {
+      heading: 'You ship fast. But does everything hold up in production?',
+      subheading:
+        'Lovable, Bolt, Cursor, and Replit build an app in hours, without checking what stays exposed or what breaks afterwards.',
+      detectHeading: 'What we detect',
+      detections: [
         {
-          title: 'You tweak your app with AI… and something breaks without you knowing.',
+          title: 'Exposed keys and data',
           description:
-            'Changing copy or a pricing button can silently break sign-up or Stripe webhooks with no visible error during quick previews.',
+            'API keys in browser code, Supabase or Firebase tables without access rules, unprotected forms.',
         },
         {
-          title: 'Are your API keys and database visible to anyone?',
-          description:
-            'Without strict Supabase RLS or Firebase access rules, any curious visitor can inspect your customer rows from the browser network tab.',
+          title: 'Broken flows',
+          description: 'Sign-up, login, forms, and Stripe checkout checked on desktop and mobile.',
         },
         {
-          title: 'You don’t have a developer to double-check.',
+          title: 'Regressions after an edit',
           description:
-            'Deciphering TypeScript stack traces or auditing network permissions takes engineering time you shouldn’t need on every update.',
+            'Your latest preview compared with the last working version: missing environment variable, failing API call.',
+        },
+        {
+          title: 'Fixes without jargon',
+          description:
+            'Every issue comes with its severity, its impact, and a prompt ready to paste into your tool.',
         },
       ],
-      solutionHeading: 'How it works in 3 steps',
-      solutionSteps: [
+      stepsHeading: 'How it works in 3 steps',
+      steps: [
         {
           title: '1. Point us to your app',
-          description:
-            'Share your preview link (certifying ownership) or drop a screenshot of the screen you want checked.',
+          description: 'Your preview link, with your ownership certification, or a screenshot.',
         },
         {
-          title: '2. We run passive security & flow checks',
-          description:
-            'Non-destructive checks for leaked keys, database rules, unprotected forms, and critical user paths.',
+          title: '2. We check without breaking anything',
+          description: 'Passive checks of keys, access rules, and critical flows.',
         },
         {
-          title: '3. Get a clear report with plain-English fixes',
-          description:
-            'Every finding is explained simply alongside a copy-ready repair prompt for Lovable, Bolt, Cursor, or Replit.',
+          title: '3. Get a clear report',
+          description: 'Plain English, with fixes ready to paste.',
         },
       ],
       audienceHeading: 'Who is it for?',
       audiences: [
         {
           title: 'Creators on Lovable, Bolt, Replit & Cursor',
-          description:
-            'You already have real users or paying customers on Supabase/Firebase + Stripe and want to iterate confidently.',
+          description: 'You already have users on Supabase or Firebase, with Stripe.',
         },
         {
           title: 'Freelancers shipping AI-built apps',
-          description:
-            'You want a fast quality and security sanity check before handing an app over to a client.',
+          description: 'You want a check before handing the app to your client.',
         },
         {
           title: 'Non-technical founders',
-          description:
-            'You ship product updates weekly and want to know right away if customer data is left exposed.',
+          description: 'You ship updates weekly without a developer to review them.',
         },
       ],
     },
-    bento: {
-      heading: 'What we detect across your app.',
-      subheading:
-        'Focused checks targeting the most common security and regression pitfalls in AI-generated web apps.',
-      flowTitle: 'Broken critical flows',
-      flowDesc:
-        'Sign-up, login, forms, and Stripe checkout tested across desktop and mobile so dead buttons or broken redirects never reach customers.',
+    sampleReport: {
+      heading: 'Here is what a report looks like.',
+      intro: 'The app and results below are fictional. They show the shape of the report.',
+      openLabel: 'Open the sample report',
+      closeLabel: 'Close the sample report',
+      appLabel: 'Fictional example · pay-beta.my-bolt-app.com',
+      summary:
+        '2 critical issues and 1 warning. Priority: remove the secret key from the browser and close access to the users table before sharing the link.',
+      evidenceLabel: 'Finding:',
+      impactLabel: 'Impact:',
+      fixLabel: 'Fix prompt',
+      findings: [
+        {
+          severity: 'Critical',
+          title: 'Stripe secret key visible in the browser',
+          evidence: 'STRIPE_SECRET found in client-side JavaScript (CheckoutForm.tsx:142).',
+          impact: 'A visitor can use it to act on your Stripe account.',
+          fix: 'Revoke the Stripe secret key, then move every call that uses it into a server route at /api/checkout.',
+        },
+        {
+          severity: 'Critical',
+          title: 'The users table is readable without signing in',
+          evidence: 'RLS disabled: 1,482 rows returned to a signed-out visitor.',
+          impact: 'Your users’ data is exposed.',
+          fix: 'Enable Row Level Security on public.users and limit reads and updates to auth.uid() = id.',
+        },
+        {
+          severity: 'Warning',
+          title: 'Pay button clipped on mobile',
+          evidence: 'At 390px wide, the button leaves the screen since the latest edit.',
+          impact: 'A customer on a phone may fail to pay.',
+          fix: 'Put the buttons in a responsive flex container (gap-3, w-full sm:w-auto) and test checkout at 390px.',
+        },
+      ],
+      flowHeading: 'Flows checked',
       flowSteps: [
-        { step: 'Sign up (/signup)', desktop: '200 OK · 1.1s', mobile: '200 OK', status: 'pass' },
-        { step: 'Verify session', desktop: 'JWT scoped', mobile: 'JWT scoped', status: 'pass' },
-        {
-          step: 'Stripe checkout',
-          desktop: '200 OK · 1.4s',
-          mobile: 'CTA clipped at 390px',
-          status: 'warn',
-        },
+        { step: 'Sign up (/signup)', desktop: '200 OK', mobile: '200 OK', status: 'pass' },
+        { step: 'Session check', desktop: 'JWT scoped', mobile: 'JWT scoped', status: 'pass' },
+        { step: 'Stripe checkout', desktop: '200 OK', mobile: 'Button clipped', status: 'warn' },
       ],
-      guardTitle: 'Exposures & sensitive data',
-      guardDesc:
-        'Flags client-side API keys, permissive Supabase/Firebase rules, cross-user data leaks, and unauthenticated API routes or forms.',
-      guardItems: [
-        { label: 'Client bundle API key scan', tag: 'Browser JS' },
-        { label: 'Database access rules', tag: 'Supabase & Firebase' },
-        { label: 'Cross-user & open routes', tag: 'Auth & API' },
+      diffHeading: 'Before and after the latest edit',
+      beforeLabel: 'Before:',
+      afterLabel: 'After:',
+      diffs: [
+        { check: 'Redirect after login', before: '200 OK', after: '200 OK', status: 'pass' },
+        { check: 'Secrets in public code', before: '0', after: '1', status: 'fail' },
       ],
-      promptTitle: 'Jargon-free fix guidance',
-      promptDesc:
-        'Every issue includes a clear severity rating, why it matters to your users, and a tested repair prompt ready to paste.',
-      samplePromptLabel: 'Sample repair prompt',
-      samplePromptBody:
-        '“Move the Stripe secret lookup into a server route at /api/checkout and require an authenticated session before returning customer invoice rows.”',
-      shieldTitle: 'Pre-launch regression checks',
-      shieldDesc:
-        'Compare your latest preview against your last working build to isolate missing env vars, vulnerable dependencies, or broken API calls.',
-      shieldDiffs: [
-        {
-          check: 'Auth redirect (/dashboard)',
-          baselineLabel: 'Last pass',
-          baseline: '200 OK',
-          previewLabel: 'Preview',
-          preview: '200 OK',
-          status: 'pass',
-        },
-        {
-          check: 'POST /api/checkout',
-          baselineLabel: 'Last pass',
-          baseline: '200 OK',
-          previewLabel: 'Preview',
-          preview: '500 · missing STRIPE_WEBHOOK_SECRET',
-          status: 'fail',
-        },
-        {
-          check: 'Dependencies & public bundle',
-          baselineLabel: 'Last pass',
-          baseline: '0 secrets',
-          previewLabel: 'Preview',
-          preview: '0 secrets',
-          status: 'pass',
-        },
-      ],
+      limits:
+        'A passive audit only covers what can be observed. It does not guarantee that no other flaw exists.',
     },
     studio: {
       badge: 'Interactive Demo',
@@ -1157,21 +1102,13 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       trustCards: [
         {
           title: 'Passive checks only',
-          metric: 'Non-intrusive',
           detail:
-            'We only audit applications whose ownership you explicitly certify. No destructive load testing or unauthorized probing.',
+            'Only on applications you certify you own. No destructive testing and no load on your server.',
         },
         {
           title: 'What happens to your screenshots',
-          metric: 'Analyzed by Google Gemini',
           detail:
             'Proofline does not save your screenshots. They are sent to Google Gemini for analysis and handled under Google’s terms: hide any sensitive data before uploading.',
-        },
-        {
-          title: 'Built for AI app stacks',
-          metric: 'Lovable · Bolt · Cursor · Replit',
-          detail:
-            'Audits specifically inspect client bundle keys, Supabase/Firebase access rules, open forms, and Stripe checkout flows.',
         },
       ],
       pricingHeading: 'Indicative plans under consideration',
@@ -1266,7 +1203,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
       gdprLabelPrefix: 'I agree to receive updates about this product and have my data processed under the',
       gdprPrivacyLink: 'privacy policy',
       gdprLabelSuffix: '. I can unsubscribe at any time.',
-      step1Submit: 'Audit My App Free',
+      step1Submit: 'Get My Free Audit',
       step1Submitting: 'Submitting...',
       emailError: 'Please enter a valid email address.',
       gdprError: 'Please accept the privacy policy to continue.',

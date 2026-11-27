@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
-import { ProblemAndSolution } from './components/ProblemAndSolution';
-import { CapabilitiesBento } from './components/CapabilitiesBento';
+import { HowItWorks } from './components/HowItWorks';
+import { SampleReport } from './components/SampleReport';
 import { LiveQAStudio } from './components/LiveQAStudio';
 import { ProofAndFAQ } from './components/ProofAndFAQ';
 import { WaitlistSection } from './components/WaitlistSection';
@@ -188,9 +188,9 @@ export default function App() {
           onJumpToLiveAudit={handleJumpToLiveAudit}
           onOpenLegal={setLegalModal}
         />
-        <ProblemAndSolution t={t} />
-        <CapabilitiesBento t={t} />
         <LiveQAStudio locale={locale} t={t} />
+        <HowItWorks t={t} />
+        <SampleReport t={t} />
         <ProofAndFAQ
           locale={locale}
           t={t}
