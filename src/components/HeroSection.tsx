@@ -272,13 +272,13 @@ export function HeroSection({
                       <Lock className="w-3.5 h-3.5 text-[#1E40AF] dark:text-[#60A5FA]" aria-hidden="true" />
                       <span>{t.hero.reassurance}</span>
                     </span>
-                    <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">
+                    <span aria-hidden="true" className="hidden sm:inline text-slate-300 dark:text-slate-700">
                       ·
                     </span>
                     <button
                       type="button"
                       onClick={onJumpToLiveAudit}
-                      className="inline-flex items-center gap-1 font-medium text-[#1E40AF] hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                      className="min-h-[44px] inline-flex items-center gap-1 font-medium text-[#1E40AF] hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                     >
                       <span>{t.hero.jumpToAudit}</span>
                       <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -292,6 +292,7 @@ export function HeroSection({
           {/* S7 — Aperçu stylisé d'un rapport d'audit */}
           <div className="lg:col-span-5">
             <div
+              role="group"
               aria-label={t.hero.workbenchAria}
               className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-sm dark:shadow-none"
             >
@@ -349,7 +350,7 @@ export function HeroSection({
                   <button
                     type="button"
                     onClick={onJumpToLiveAudit}
-                    className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                    className="inline-flex items-center justify-end min-h-[44px] text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                   >
                     {t.hero.runLiveCheck}
                   </button>

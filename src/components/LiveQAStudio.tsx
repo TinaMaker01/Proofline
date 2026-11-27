@@ -892,7 +892,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
               tabIndex={activeTab === 'screenshot' ? 0 : -1}
               onClick={() => setActiveTab('screenshot')}
               onKeyDown={handleTabKeyDown}
-              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
+              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[44px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                 activeTab === 'screenshot'
                   ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-[#F8FAFC] shadow-xs dark:shadow-none'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -911,7 +911,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
               tabIndex={activeTab === 'chat' ? 0 : -1}
               onClick={() => setActiveTab('chat')}
               onKeyDown={handleTabKeyDown}
-              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
+              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[44px] text-xs sm:text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] ${
                 activeTab === 'chat'
                   ? 'bg-white dark:bg-[#1E293B] text-slate-900 dark:text-[#F8FAFC] shadow-xs dark:shadow-none'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -952,7 +952,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                         <button
                           type="button"
                           onClick={handleLoadDemoScreenshot}
-                          className="text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                          className="min-h-[44px] text-xs font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                         >
                           {t.studio.loadDemo}
                         </button>
@@ -993,8 +993,6 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                         onClick={() => fileInputRef.current?.click()}
                         role="button"
                         tabIndex={0}
-                        aria-labelledby="screenshot-upload-label"
-                        aria-describedby="screenshot-upload-hint"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
@@ -1054,7 +1052,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                         id="audit-builder-select"
                         value={builderTool}
                         onChange={(e) => setBuilderTool(e.target.value as BuilderTool)}
-                        className="w-full px-3 py-2.5 min-h-[42px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 cursor-pointer"
+                        className="w-full px-3 py-2.5 min-h-[44px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25 cursor-pointer"
                       >
                         {BUILDERS.map((tool) => (
                           <option key={tool} value={tool}>
@@ -1077,7 +1075,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                         onChange={(e) => setFocusNote(e.target.value)}
                         placeholder={t.studio.focusPlaceholder}
                         maxLength={200}
-                        className="w-full px-3 py-2.5 min-h-[42px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
+                        className="w-full px-3 py-2.5 min-h-[44px] text-sm bg-white dark:bg-[#090D16] text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-500 dark:placeholder:text-slate-400 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#1E40AF] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1E40AF]/15 dark:focus:ring-[#3B82F6]/25"
                       />
                     </div>
                   </div>
@@ -1140,7 +1138,7 @@ export function LiveQAStudio({ locale, t }: LiveQAStudioProps) {
                       <button
                         type="button"
                         onClick={handleLoadDemoScreenshot}
-                        className="font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                        className="inline-flex items-center min-h-[44px] font-medium text-[#1E40AF] dark:text-[#60A5FA] hover:underline underline-offset-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
                       >
                         {t.studio.loadDemo}
                       </button>{' '}

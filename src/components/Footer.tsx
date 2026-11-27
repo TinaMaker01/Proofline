@@ -28,7 +28,7 @@ export function Footer({
         <div>
           <a
             href="#"
-            className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            className="inline-flex items-center min-h-[44px] font-display text-lg font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             Proofline
           </a>
@@ -39,14 +39,14 @@ export function Footer({
           <button
             type="button"
             onClick={() => onOpenLegal('legal')}
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            className="inline-flex items-center min-h-[44px] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             {t.footer.legal}
           </button>
           <button
             type="button"
             onClick={() => onOpenLegal('privacy')}
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            className="inline-flex items-center min-h-[44px] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             {t.footer.privacy}
           </button>
@@ -56,7 +56,7 @@ export function Footer({
                 key={kind}
                 type="button"
                 onClick={() => onOpenLegal(kind)}
-                className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+                className="inline-flex items-center min-h-[44px] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
               >
                 {PREORDER_TRANSLATIONS[locale][kind === 'terms' ? 'termsLink' : 'refundLink']}
               </button>
@@ -64,7 +64,7 @@ export function Footer({
           <button
             type="button"
             onClick={() => onOpenLegal('contact')}
-            className="hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
+            className="inline-flex items-center min-h-[44px] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:underline underline-offset-4 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA] rounded-sm"
           >
             {t.footer.contact}
           </button>

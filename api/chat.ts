@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { chatWithGeminiAdvisor } from '../server/geminiService.js';
+import { rejectIfRateLimited } from '../server/rateLimit.js';
 
 interface ServerlessRequest extends IncomingMessage {
   body?: unknown;
@@ -27,6 +28,8 @@ export default async function handler(req: ServerlessRequest, res: ServerRespons
     res.end(JSON.stringify({ error: 'Method not allowed' }));
     return;
   }
+
+  if (rejectIfRateLimited('chat', req, res)) return;
 
   let body: unknown = {};
   try {

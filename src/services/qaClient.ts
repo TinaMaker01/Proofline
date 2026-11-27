@@ -488,6 +488,15 @@ async function askQAAdvisorFallback(params: {
   ].join('\n');
 }
 
+/**
+ * Service d’analyse hors d’usage (route absente, clé refusée, erreur serveur) :
+ * on bascule sur le repli signalé. Les autres refus (400, 429) portent un
+ * message utile au visiteur et sont affichés tels quels.
+ */
+function isServiceUnavailable(status: number): boolean {
+  return status === 403 || status === 404 || status >= 500;
+}
+
 export async function analyzeScreenshotLocally(params: {
   imageDataUrl: string;
   builderTool: BuilderTool;
@@ -506,7 +515,7 @@ export async function analyzeScreenshotLocally(params: {
   try {
     const response = await fetch('/api/analyze-screenshot', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': params.locale },
       body: JSON.stringify({
         imageDataUrl: params.imageDataUrl,
         builderTool: params.builderTool,
@@ -519,7 +528,7 @@ export async function analyzeScreenshotLocally(params: {
       return (await response.json()) as ScreenshotAnalysisResult;
     }
 
-    if (response.status === 404 || response.status === 503) {
+    if (isServiceUnavailable(response.status)) {
       return analyzeScreenshotFallback(params);
     }
 
@@ -555,7 +564,7 @@ export async function askQAAdvisor(params: {
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': params.locale },
       body: JSON.stringify({
         messages: params.messages,
         builderContext: params.builderContext,
@@ -568,7 +577,7 @@ export async function askQAAdvisor(params: {
       if (data.reply) return { text: data.reply, isExample: false };
     }
 
-    if (response.status === 404 || response.status === 503) {
+    if (isServiceUnavailable(response.status)) {
       return { text: await askQAAdvisorFallback(params), isExample: true };
     }
 

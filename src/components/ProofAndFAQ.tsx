@@ -36,12 +36,12 @@ export function ProofAndFAQ({
       {/* S8 — Preuve et confiance honnête (sans faux témoignages) */}
       <section
         id="proof"
-        className="scroll-mt-20 py-20 lg:py-24 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
+        className="scroll-mt-20 py-14 lg:py-16 bg-white dark:bg-[#0D1321] border-t border-slate-200 dark:border-slate-800/90 transition-colors duration-150"
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div className="max-w-2xl">
             <h2
-              className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
+              className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]"
               style={{ textWrap: 'balance' }}
             >
               {t.proofPricingFaq.trustHeading}

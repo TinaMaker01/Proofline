@@ -112,6 +112,13 @@ export interface SiteTranslations {
     afterLabel: string;
     diffs: Array<{ check: string; before: string; after: string; status: 'pass' | 'fail' }>;
     limits: string;
+    fixDemo: {
+      title: string;
+      beforeTitle: string;
+      beforeCaption: string;
+      afterTitle: string;
+      afterCaption: string;
+    };
   };
   studio: {
     badge: string;
@@ -332,7 +339,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     hero: {
       headline: 'Ton app générée par IA est-elle vraiment sûre ?',
       subheadline:
-        'Modifie ton app avec l’IA sans peur. Reçois un audit gratuit de sécurité :clés exposées, base de données ouverte, accès non protégés. Explications claires, sans jargon.',
+        'Modifie ton app avec l’IA sans peur. Reçois un audit gratuit de sécurité : clés exposées, base de données ouverte, accès non protégés. Explications claires, sans jargon.',
       emailLabel: 'Ton adresse e-mail',
       emailPlaceholder: 'toi@tonprojet.com',
       gdprLabelPrefix: 'J’accepte de recevoir des informations sur ce produit et que mes données soient traitées selon la',
@@ -472,6 +479,14 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           fix: 'Place les boutons dans un conteneur flex responsive (gap-3, w-full sm:w-auto) et vérifie le paiement à 390 px.',
         },
       ],
+      fixDemo: {
+        title: 'Un correctif, avant et après',
+        beforeTitle: 'Avant : clé exposée',
+        beforeCaption: 'La clé secrète part avec le code envoyé à chaque visiteur.',
+        afterTitle: 'Après : appel côté serveur',
+        afterCaption:
+          'Le navigateur n’envoie que la formule choisie. La nouvelle clé reste sur le serveur, l’ancienne est révoquée.',
+      },
       flowHeading: 'Parcours vérifiés',
       flowSteps: [
         { step: 'Inscription (/signup)', desktop: '200 OK', mobile: '200 OK', status: 'pass' },
@@ -835,7 +850,7 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
     hero: {
       headline: 'Is your AI-generated app actually secure?',
       subheadline:
-        'Update your app with AI without the fear. Get a free passive security audit:leaked keys, open databases, unprotected access. Plain English, zero jargon.',
+        'Update your app with AI without the fear. Get a free passive security audit: leaked keys, open databases, unprotected access. Plain English, zero jargon.',
       emailLabel: 'Your email address',
       emailPlaceholder: 'you@yourproject.com',
       gdprLabelPrefix: 'I agree to receive updates about this product and have my data processed under the',
@@ -972,6 +987,14 @@ export const TRANSLATIONS: Record<Locale, SiteTranslations> = {
           fix: 'Put the buttons in a responsive flex container (gap-3, w-full sm:w-auto) and test checkout at 390px.',
         },
       ],
+      fixDemo: {
+        title: 'One fix, before and after',
+        beforeTitle: 'Before: exposed key',
+        beforeCaption: 'The secret key ships with the code sent to every visitor.',
+        afterTitle: 'After: server-side call',
+        afterCaption:
+          'The browser only sends the chosen plan. The new key stays on the server, the old one is revoked.',
+      },
       flowHeading: 'Flows checked',
       flowSteps: [
         { step: 'Sign up (/signup)', desktop: '200 OK', mobile: '200 OK', status: 'pass' },

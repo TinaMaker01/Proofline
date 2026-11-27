@@ -17,6 +17,17 @@ function StatusIcon({ status }: { status: keyof typeof ICON_TONES }) {
   return <Icon className={`w-4 h-4 shrink-0 ${className}`} aria-hidden="true" />;
 }
 
+// Extraits fictifs : le même fichier, avant et après le correctif.
+const CODE_BEFORE = `// CheckoutForm.tsx
+const stripe = new Stripe(STRIPE_SECRET);
+await stripe.charges.create(order);`;
+
+const CODE_AFTER = `// CheckoutForm.tsx
+await fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({ planId }),
+});`;
+
 export function SampleReport({ t }: SampleReportProps) {
   const copy = t.sampleReport;
   const [open, setOpen] = useState(false);
@@ -36,6 +47,51 @@ export function SampleReport({ t }: SampleReportProps) {
         <p className="mt-4 max-w-[60ch] text-base text-slate-600 dark:text-slate-300 leading-relaxed">
           {copy.intro}
         </p>
+
+        <h3 className="mt-10 font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
+          {copy.fixDemo.title}
+        </h3>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            {
+              title: copy.fixDemo.beforeTitle,
+              caption: copy.fixDemo.beforeCaption,
+              code: CODE_BEFORE,
+              Icon: XCircle,
+              tone: 'text-rose-700 dark:text-rose-400',
+              border: 'border-rose-300 dark:border-rose-500/40',
+            },
+            {
+              title: copy.fixDemo.afterTitle,
+              caption: copy.fixDemo.afterCaption,
+              code: CODE_AFTER,
+              Icon: CheckCircle2,
+              tone: 'text-emerald-700 dark:text-emerald-400',
+              border: 'border-emerald-300 dark:border-emerald-500/40',
+            },
+          ].map(({ title, caption, code, Icon, tone, border }) => (
+            <figure
+              key={title}
+              className={`min-w-0 flex flex-col rounded-xl border bg-white dark:bg-[#111827] ${border}`}
+            >
+              <figcaption className="px-5 pt-4">
+                <span className={`flex items-center gap-2 text-sm font-semibold ${tone}`}>
+                  <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  {title}
+                </span>
+                <span className="mt-1.5 block text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {caption}
+                </span>
+              </figcaption>
+              <pre
+                tabIndex={0}
+                className="overflow-x-auto px-5 py-4 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-200 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#1E40AF] dark:focus-visible:outline-[#60A5FA]"
+              >
+                <code>{code}</code>
+              </pre>
+            </figure>
+          ))}
+        </div>
 
         <details
           className="group mt-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] overflow-hidden"
